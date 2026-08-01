@@ -11,17 +11,17 @@
 
 | | Carril | Archivos exclusivos |
 |---|---|---|
-| **David** | Motor solar y reglas | `lib/solar.ts`, `lib/recommend.ts` |
+| **Cain** | Motor solar y reglas | `lib/solar.ts`, `lib/recommend.ts` |
 | **Lisandro** | Datos, API e integración · **dueño del deploy** | `lib/providers.ts`, `lib/normalize.ts`, `app/api/dashboard/route.ts`, `lib/fallback.json` |
 | **Lautaro** | Dashboard, mock y tarjetas | `app/page.tsx`, `components/Dashboard.tsx`, `MetricCard.tsx`, `AdviceCard.tsx`, `AiBadge.tsx`, `app/globals.css`, `lib/mock.ts` |
-| **Cain** | Visualizaciones y pitch | `components/SolarArc.tsx`, `ValidationChart.tsx`, `PowerChart.tsx`, `README.md`, slides, video |
+| **David** | Visualizaciones y pitch | `components/SolarArc.tsx`, `ValidationChart.tsx`, `PowerChart.tsx`, `README.md`, slides, video |
 
-**Los tres carriles que no son el de Lisandro son intercambiables** — las fronteras son de archivo, no de persona, así que se pueden permutar en diez segundos. Lo único que conviene fijar: **el motor (David) es el camino crítico** y hay que pushearlo temprano porque desbloquea al resto; y **el deploy y la integración van juntos en la misma persona** (Lisandro, que tiene el repo y la cuenta de Vercel).
+**Los tres carriles que no son el de Lisandro son intercambiables** — las fronteras son de archivo, no de persona, así que se pueden permutar en diez segundos. Lo único que conviene fijar: **el motor (Cain) es el camino crítico** y hay que pushearlo temprano porque desbloquea al resto; y **el deploy y la integración van juntos en la misma persona** (Lisandro, que tiene el repo y la cuenta de Vercel).
 
 Dos advertencias sobre el reparto, para que nadie se sorprenda a mitad de camino:
 
-- **Lisandro tiene el carril más pesado.** El normalizador de Open-Meteo → `HourlyPoint[]` es lo que más código lleva de todo el proyecto, y además conduce la Etapa 3. Si a los 40 minutos va corto, el primero que se libera es David (el motor es pegar §4.2 y verificar) y le entra a `lib/normalize.ts`.
-- **Con 4 personas, algo se cae.** `PowerChart.tsx` pasa a ser el objetivo elástico de Cain: si no llega, no llega. Se cortan las visualizaciones en ese orden y no en otro, porque `SolarArc` es must-have y `ValidationChart` es el pico del pitch.
+- **Lisandro tiene el carril más pesado.** El normalizador de Open-Meteo → `HourlyPoint[]` es lo que más código lleva de todo el proyecto, y además conduce la Etapa 3. Si a los 40 minutos va corto, el primero que se libera es Cain (el motor es pegar §4.2 y verificar) y le entra a `lib/normalize.ts`.
+- **Con 4 personas, algo se cae.** `PowerChart.tsx` pasa a ser el objetivo elástico de David: si no llega, no llega. Se cortan las visualizaciones en ese orden y no en otro, porque `SolarArc` es must-have y `ValidationChart` es el pico del pitch.
 
 ---
 
@@ -32,9 +32,9 @@ En 2 horas con 4 personas **no entra todo**. Esto es lo que se defiende solo si 
 | # | Must-have | Dueño |
 |---|---|---|
 | 1 | Dashboard con **una** ubicación fija (Corrientes, −27.47 / −58.83) | Lautaro |
-| 2 | Potencia ahora · kWh hoy · kWh con la mejor orientación fija · pérdida % | David + Lautaro |
-| 3 | Arco solar en SVG con el panel dibujado | Cain |
-| 4 | **Una** recomendación con número **y fórmula visible** | David (regla) + Lautaro (tarjeta) |
+| 2 | Potencia ahora · kWh hoy · kWh con la mejor orientación fija · pérdida % | Cain + Lautaro |
+| 3 | Arco solar en SVG con el panel dibujado | David |
+| 4 | **Una** recomendación con número **y fórmula visible** | Cain (regla) + Lautaro (tarjeta) |
 | 5 | Contador de IA frugal | Lautaro |
 | 6 | Deployado y abriendo desde un celular ajeno | Lisandro |
 
@@ -75,7 +75,7 @@ export const compassToOpenMeteo = (deg: number) => ((norm360(deg) - 180 + 540) %
 export const deltaAz = (from: number, to: number) => ((to - from + 540) % 360) - 180
 ```
 
-**Prueba de humo (2 minutos, David la corre en la Etapa 2).** Corrientes, `2026-06-21T15:55Z` (mediodía solar del solsticio de invierno):
+**Prueba de humo (2 minutos, Cain la corre en la Etapa 2).** Corrientes, `2026-06-21T15:55Z` (mediodía solar del solsticio de invierno):
 
 ```
 elevación ≈ 39°     azimut ≈ 0° (norte)
@@ -126,7 +126,7 @@ Después: pegar `lib/types.ts` completo (§4.1), `git init`, repo en GitHub, **i
 
 Cada uno crea **sus** archivos con las firmas de función y un `return` cualquiera que **tipa y compila**, y pushea. A partir de acá todos pueden importar de todos aunque nada esté implementado.
 
-En paralelo, **Lautaro publica `lib/mock.ts`**: un `DashboardPayload` completo, hardcodeado, con ~14 puntos horarios plausibles. Es *el* artefacto que desbloquea a Lautaro y a Cain durante los siguientes 40 minutos. No es opcional y no es "lo hago después".
+En paralelo, **Lautaro publica `lib/mock.ts`**: un `DashboardPayload` completo, hardcodeado, con ~14 puntos horarios plausibles. Es *el* artefacto que desbloquea a Lautaro y a David durante los siguientes 40 minutos. No es opcional y no es "lo hago después".
 
 ### Etapa 2 · Paralelo (0:20–1:00) — 4 carriles
 
@@ -147,8 +147,8 @@ Sin dueño nombrado, la integración se transforma en cuatro personas mirando el
 
 - **Lisandro** — `lib/fallback.json` cargado y probado **con el wifi apagado**. No es opcional.
 - **Lautaro** — abrir en un teléfono ajeno. Estados de carga y error (con wifi de hackatón, lo que va a ver el jurado es una pantalla en blanco de 8 segundos).
-- **David** — que no haya `NaN`, `Infinity` ni sol dibujado de noche. Es su motor el que los produce.
-- **Cain** — **video de 40 segundos de la demo andando**, como seguro contra el "no anda en vivo".
+- **Cain** — que no haya `NaN`, `Infinity` ni sol dibujado de noche. Es su motor el que los produce.
+- **David** — **video de 40 segundos de la demo andando**, como seguro contra el "no anda en vivo".
 
 ### Etapa 5 · Pitch (1:40–2:00)
 
@@ -158,7 +158,7 @@ Dos pasadas completas con cronómetro. Los cuatro tienen que saber responder *"�
 
 ## §3 · Los 4 carriles
 
-### David · Motor solar y reglas
+### Cain · Motor solar y reglas
 
 **Archivos exclusivos:** `lib/solar.ts`, `lib/recommend.ts`
 **Depende de:** nada. **Bloquea a:** todos. Empezá por acá y pusheá temprano.
@@ -207,9 +207,9 @@ Devolvés `Recommendation[]`; **Lautaro las renderiza**. La frontera es el tipo:
 ### Lisandro · Datos, API e integración
 
 **Archivos exclusivos:** `lib/providers.ts`, `lib/normalize.ts`, `app/api/dashboard/route.ts`, `lib/fallback.json`
-**Depende de:** `types.ts` (Etapa 0) y las firmas de David (Etapa 1). **Dueño de la Etapa 3 y del deploy.**
+**Depende de:** `types.ts` (Etapa 0) y las firmas de Cain (Etapa 1). **Dueño de la Etapa 3 y del deploy.**
 
-**Es el carril más pesado del proyecto.** El normalizador —mapear los arrays paralelos de Open-Meteo a `HourlyPoint[]`, calcular posición solar punto por punto, POA, potencia y el óptimo— es lo que más código lleva. Si a los 40 minutos vas corto, pedile a David que agarre `lib/normalize.ts`: es la única transferencia de trabajo prevista en el plan.
+**Es el carril más pesado del proyecto.** El normalizador —mapear los arrays paralelos de Open-Meteo a `HourlyPoint[]`, calcular posición solar punto por punto, POA, potencia y el óptimo— es lo que más código lleva. Si a los 40 minutos vas corto, pedile a Cain que agarre `lib/normalize.ts`: es la única transferencia de trabajo prevista en el plan.
 
 Todas las APIs son gratuitas y **sin API key**.
 
@@ -236,9 +236,9 @@ Ese matiz, además, es una respuesta excelente si un juez pregunta por precisió
 **Archivos exclusivos:** `app/page.tsx`, `components/Dashboard.tsx`, `components/MetricCard.tsx`, `components/AdviceCard.tsx`, `components/AiBadge.tsx`, `app/globals.css`, **`lib/mock.ts`**
 **Depende de:** `types.ts`. **Trabaja contra `MOCK` desde el minuto 12.** En la Etapa 3 se cambia una línea.
 
-**Entregable de la Etapa 1, antes que cualquier estilo: `lib/mock.ts`.** Un `DashboardPayload` completo y plausible, con ~14 puntos horarios. Desbloquea a Cain durante los siguientes 40 minutos — mientras no exista, él no puede hacer nada.
+**Entregable de la Etapa 1, antes que cualquier estilo: `lib/mock.ts`.** Un `DashboardPayload` completo y plausible, con ~14 puntos horarios. Desbloquea a David durante los siguientes 40 minutos — mientras no exista, él no puede hacer nada.
 
-Sos el único que toca componentes de presentación. David produce los datos de las recomendaciones, vos los mostrás; la frontera entre ustedes es el tipo `Recommendation`, no un archivo compartido.
+Sos el único que toca componentes de presentación. Cain produce los datos de las recomendaciones, vos los mostrás; la frontera entre ustedes es el tipo `Recommendation`, no un archivo compartido.
 
 **Dirección visual — restricción tipo Starlink:**
 
@@ -296,13 +296,13 @@ Dos reglas para que los números del badge no sean decorativos:
 - **`computations`** es el valor que devuelve `optimalFixedOrientation` (~67.000 con 3 días de pronóstico), **nunca uno escrito a mano**. Si cambia `forecast_days`, el número cambia solo.
 - **`whEstimated` = `llmCalls × 0,24 Wh`**, que es el consumo **medido por Google** para un prompt de texto mediano en Gemini (paper de agosto 2025, arXiv 2508.15734). **La fuente va citada en pantalla, en chico, debajo del contador.** En el proyecto cuya tesis es la honestidad numérica, un número inventado acá se lleva puesta la credibilidad del resto — incluido el porcentaje de la recomendación.
 
-El botón se muestra según `NEXT_PUBLIC_LLM_ENABLED` (§3 · Cain arma el endpoint si se prende). Con el flag apagado, el badge queda igual pero sin botón: sigue siendo un argumento completo.
+El botón se muestra según `NEXT_PUBLIC_LLM_ENABLED` (§3 · David arma el endpoint si se prende). Con el flag apagado, el badge queda igual pero sin botón: sigue siendo un argumento completo.
 
 **Listo cuando:** se ve completo con `MOCK`, en un teléfono, con estados de carga y error, y el badge marca `0 llamadas`.
 
 ---
 
-### Cain · Visualizaciones y pitch
+### David · Visualizaciones y pitch
 
 **Archivos exclusivos:** `components/SolarArc.tsx`, `components/ValidationChart.tsx`, `components/PowerChart.tsx`, `README.md`, slides, video
 **Depende de:** `lib/mock.ts` (minuto 20). **Arrancá en 2D con SVG. El 3D es trampa de tiempo.**
@@ -415,7 +415,7 @@ export interface Recommendation {
 
 export interface AirQuality {
   pm10: number; pm2_5: number; usAqi: number
-  dust: number              // NO opcional: si falta, 0 (ver §3 · David)
+  dust: number              // NO opcional: si falta, 0 (ver §3 · Cain)
 }
 
 export interface AiStats {
@@ -444,7 +444,7 @@ export interface DashboardPayload {
 }
 ```
 
-### §4.2 · `lib/solar.ts` — David
+### §4.2 · `lib/solar.ts` — Cain
 
 ```ts
 import SunCalc from 'suncalc'
@@ -540,7 +540,7 @@ export function optimalFixedOrientation(points: RadPoint[], panel: PanelConfig) 
   return { orientation, kwh, evaluations }
 }
 
-/** Nunca NaN, nunca Infinity. Ver §3 · David. */
+/** Nunca NaN, nunca Infinity. Ver §3 · Cain. */
 export const lossPct = (actual: number, optimal: number) =>
   actual > 0.05 ? Math.max(0, ((optimal - actual) / actual) * 100) : 0
 ```
@@ -613,7 +613,7 @@ curl "https://api.open-meteo.com/v1/forecast?latitude=-27.47&longitude=-58.83&ho
 
 El fallback tiene timestamps del momento en que se generó. **No los muevas**: se muestra `meta.source === 'fallback'` en la UI con la fecha de los datos. Es honesto, cuesta cero y responder *"sí, cuando se cae la API servimos el último dato bueno y lo decimos en pantalla"* es mejor que fingir que es de ahora.
 
-### §4.4 · `lib/recommend.ts` — David
+### §4.4 · `lib/recommend.ts` — Cain
 
 ```ts
 import { deltaAz } from './solar'
@@ -693,7 +693,7 @@ export function buildRecommendations(
 
 1. **Rama única `main`.** `git pull --rebase` antes de cada push. Commits cada 15 minutos.
 2. **Todas las dependencias se instalan en la Etapa 0, y las instala Lisandro.** Después **nadie** corre `npm i <paquete>`. La frontera que se rompe siempre no es el código: es `package-lock.json`, y el conflicto llega en el peor momento. Si alguien necesita algo, lo pide en voz alta y lo instala Lisandro.
-3. **Cada uno toca solo sus archivos** (tabla al inicio de §0). Si necesitás algo del carril de otro, se lo pedís; no lo editás. La única transferencia prevista es David → `lib/normalize.ts` si Lisandro va corto.
+3. **Cada uno toca solo sus archivos** (tabla al inicio de §0). Si necesitás algo del carril de otro, se lo pedís; no lo editás. La única transferencia prevista es Cain → `lib/normalize.ts` si Lisandro va corto.
 4. **`lib/types.ts` es de todos y de nadie.** Se escribe en la Etapa 0 y después solo se toca avisando en voz alta, porque un cambio ahí rompe los cuatro carriles a la vez.
 5. **A la 1:25, lo que no compila se comenta.** No se debuggea de más.
 6. **El video de 40 segundos se graba apenas la demo anda**, no al final.
@@ -705,14 +705,14 @@ export function buildRecommendations(
 
 | # | Bloque | Tiempo | Habla | Qué se dice |
 |---|---|---|---|---|
-| 1 | **Problema** | 25 s | Cain | Un panel fijo mal orientado pierde entre 10 % y 25 % al año y el dueño no tiene cómo saberlo. Al mismo tiempo, la demanda energética de la IA crece. |
+| 1 | **Problema** | 25 s | David | Un panel fijo mal orientado pierde entre 10 % y 25 % al año y el dueño no tiene cómo saberlo. Al mismo tiempo, la demanda energética de la IA crece. |
 | 2 | **Solución** | 25 s | Lautaro | El dashboard, con datos reales de Corrientes, en vivo. |
 | 3 | **La acción** | 35 s | Lautaro | *"El panel está 18° fuera de la mejor orientación fija. Ajustarlo sumaría 12 %."* Se muestra el número, la fórmula y los kWh. |
-| 4 | **La validación** | 40 s | David | **El pico.** El gráfico con las dos curvas superpuestas: nuestro motor y Open-Meteo, un proveedor meteorológico independiente. Error medio 3 %. *"No les pedimos que nos crean: acá está el mismo número calculado por un tercero."* |
-| 5 | **El diferencial** | 30 s | David | El badge, marcando **0 llamadas a IA**. *"La posición del sol se calcula con astronomía desde hace 400 años. Novecientas treinta y seis orientaciones evaluadas por fuerza bruta, en milisegundos. Cero llamadas a un modelo."* Si el botón del LLM llegó a existir, se aprieta acá y el contador sube a 1 · 0,24 Wh con la fuente citada. Si no llegó, **el bloque funciona igual** — el cero solo es más rotundo. |
+| 4 | **La validación** | 40 s | Cain | **El pico.** El gráfico con las dos curvas superpuestas: nuestro motor y Open-Meteo, un proveedor meteorológico independiente. Error medio 3 %. *"No les pedimos que nos crean: acá está el mismo número calculado por un tercero."* |
+| 5 | **El diferencial** | 30 s | Cain | El badge, marcando **0 llamadas a IA**. *"La posición del sol se calcula con astronomía desde hace 400 años. Novecientas treinta y seis orientaciones evaluadas por fuerza bruta, en milisegundos. Cero llamadas a un modelo."* Si el botón del LLM llegó a existir, se aprieta acá y el contador sube a 1 · 0,24 Wh con la fuente citada. Si no llegó, **el bloque funciona igual** — el cero solo es más rotundo. |
 | 6 | **Escalabilidad y cierre** | 25 s | Lisandro | Sensores Seeed / PowerTimer para pasar de estimación a medición. Extrapolación anual del ahorro. |
 
-Quien habla del bloque 4 tiene que ser quien escribió el motor: si un juez repregunta sobre la validación, la respuesta tiene que salir sin dudar. Por eso David lleva los bloques 4 y 5.
+Quien habla del bloque 4 tiene que ser quien escribió el motor: si un juez repregunta sobre la validación, la respuesta tiene que salir sin dudar. Por eso Cain lleva los bloques 4 y 5.
 
 **El cambio respecto de la versión anterior del guion:** el pico dejó de ser el "+12 %" y pasó a ser la validación. Un porcentaje afirmado es una promesa; un porcentaje confirmado por un tercero independiente es evidencia. Y desarma de antemano la única pregunta que puede voltear el pitch.
 
@@ -799,7 +799,7 @@ Para quien ya había leído la versión anterior.
 
 **Agregados:**
 
-- **Gráfico de validación contra Open-Meteo** (§3 · Cain) — la mejora más grande. Convierte el pitch de una afirmación en evidencia.
+- **Gráfico de validación contra Open-Meteo** (§3 · David) — la mejora más grande. Convierte el pitch de una afirmación en evidencia.
 - **Contador de cálculos real** — las evaluaciones que devuelve el motor (~67.000 con 3 días), no un número decorativo escrito a mano.
 - **0,24 Wh con fuente citada** en vez de un "~0,4 Wh" inventado.
 - **LLM detrás de un flag, apagado por defecto** — el badge arranca en cero y el usuario decide gastar la energía. Cubre los dos escenarios de reglas de la hackatón.
