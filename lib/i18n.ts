@@ -17,7 +17,7 @@ export interface I18nContent {
   banner: {
     featureTitle: string
     featureDesc: string
-    p95Label: string
+    durationLabel: string
   }
   kpi: {
     mechatronicAdvantage: {
@@ -118,19 +118,20 @@ export interface I18nContent {
   benchmark: {
     title: string
     subtitle: string
-    bonusBadge: string
-    headers: {
-      metric: string
-      decider: string
-      frontier: string
-      efficiency: string
-    }
-    rows: {
-      latency: { name: string; decider: string; frontier: string; factor: string }
-      energy: { name: string; decider: string; frontier: string; factor: string }
-      rainwash: { name: string; decider: string; frontier: string; factor: string }
-      gain: { name: string; decider: string; frontier: string; factor: string }
-    }
+    details: string[]
+  }
+  provenance: {
+    sample: string
+    liveDecider: string
+    localDecider: string
+    deciderReasons: Record<'endpoint_not_configured' | 'request_failed' | 'invalid_response', string>
+    liveBedrock: string
+    localBedrock: string
+    bedrockReasons: Record<'disabled' | 'request_failed' | 'invalid_response', string>
+    modelLabel: string
+    measuredDuration: string
+    noEnergyMeasurement: string
+    noComparison: string
   }
 }
 
@@ -138,9 +139,9 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
   en: {
     header: {
       title: 'Kuarahy AX',
-      deciderBadge: 'Strands Decider 2B',
-      activeMechatronicsBadge: 'Active Mechatronics',
-      subtitlePrefix: 'Autonomous Solar Tracking & Rainwash · ',
+      deciderBadge: 'Optional Strands endpoint',
+      activeMechatronicsBadge: 'Simulation',
+      subtitlePrefix: 'Simulated Solar Tracking & Rainwash · ',
       frugalQuote: '"The Frugal Architect"',
     },
     tabs: {
@@ -150,39 +151,38 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       secondaryBadge: 'Secondary',
     },
     banner: {
-      featureTitle: 'Primary Feature: Mechatronic Energy Gain & Autonomous Rainwash',
-      featureDesc:
-        'Fixed panels lose up to 30% of energy due to cosine incidence angle and up to 15% from dust and particulate soiling. Kuarahy AX links tracker mechatronics to AWS Strands Decider 2B (<115ms) to continuously face the sun, and actuates 65° hydro-mechanical rainwash when precipitation is detected, saving thousands in manual cleaning crews.',
-      p95Label: 'Decider 2B P95',
+      featureTitle: 'Solar telemetry and tracker simulation',
+      featureDesc: 'Interactive solar-tracking simulation. When configured, the server can request a tool choice from a Strands Decider endpoint; otherwise it uses a labeled local heuristic. No physical tracker is connected.',
+      durationLabel: 'Decision request duration',
     },
     kpi: {
       mechatronicAdvantage: {
-        title: 'Mechatronic Advantage',
-        comparison: 'vs traditional fixed-tilt',
-        statusTag: 'Hero Metric',
+        title: 'Simulated tracker gain',
+        comparison: 'simulation vs fixed-panel baseline',
+        statusTag: 'Simulation',
       },
       netActivePower: {
         title: 'Active Net Power',
-        comparison: 'net surplus generation',
+        comparison: 'simulated power difference',
         statusTagPrefix: 'fixed',
       },
       deciderLatency: {
-        title: 'Decider 2B Latency',
-        comparison: '99.2% faster than Cloud LLM',
-        statusTag: 'Werner Vogels P95',
+        title: 'Decision request duration',
+        comparison: 'per-request duration; not a benchmark',
+        statusTag: 'Request duration',
       },
       crewSavings: {
-        title: 'Cleaning Crew Savings',
-        activeComparison: '65° rainwash active',
-        idleComparison: 'Rain eliminates manual wash crews',
-        statusTag: 'Optimized O&M',
+        title: 'Modeled cleaning-cost estimate',
+        activeComparison: 'illustrative rainwash scenario',
+        idleComparison: 'No estimate for this scenario',
+        statusTag: 'Illustrative',
       },
     },
     twin: {
-      title: 'Digital Twin: Real-Time Mechatronic Actuation',
-      subtitle: 'Physical visualization of solar path, panel tilt angle, and normal radiation vectors.',
+      title: 'Digital Twin: Simulated Mechatronic Behavior',
+      subtitle: 'Interactive visualization of a simulated solar path, panel tilt angle, and radiation vectors.',
       motorTilt: 'Motor Tilt',
-      evaluating: 'Strands Decider 2B evaluating...',
+      evaluating: 'Evaluating solar scenario...',
       solarHour: 'Solar Hour',
       elevation: 'Elevation',
       directGti: 'Direct GTI',
@@ -202,20 +202,19 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       },
     },
     sidebar: {
-      focusTitle: 'Quantified Mechatronic Advantage',
-      focusSubPrefix: 'Power with active mechatronic tracker (vs ',
+      focusTitle: 'Simulated Mechatronic Scenario',
+      focusSubPrefix: 'Simulated tracker power (vs ',
       fixedSuffix: ' fixed)',
       surplusTextPrefix: '+',
-      surplusTextSuffix: ' kW instantaneous net surplus generation enabled by Strands Decider 2B micro-adjustments.',
-      rainwashActivePrefix: '🌧️ Active Rainwash Mode: 65° tilt leverages natural rainfall to wash away ',
-      rainwashActiveMiddle: ' accumulated dust soiling. Projected savings of $',
-      rainwashActiveSuffix: ' USD/year in eliminated manual wash crews.',
-      verdictTitle: 'Strands Decider 2B Verdict',
+      surplusTextSuffix: ' kW simulated power difference; no physical equipment is connected.',
+      rainwashActivePrefix: '🌧️ Simulated rainwash scenario: 65° tilt with ',
+      rainwashActiveMiddle: ' soiling. Illustrative local cleaning-cost estimate: $',
+      rainwashActiveSuffix: ' USD/year; not verified savings.',
+      verdictTitle: 'Decision provenance',
       selectedTool: 'Selected Tool',
-      confidence: 'Calibrated Confidence',
+      confidence: 'Reported confidence score',
       frugalTitle: '🏛️ Frugal Architecture (Werner Vogels)',
-      frugalText:
-        'A motor gear actuator cannot wait 2 seconds for a cloud LLM to respond. Strands Decider 2B resolves in 14ms at the edge, saving 0.24 Wh per control cycle.',
+      frugalText: 'This demo reports the duration of an individual request only. It does not measure energy use, compare model latency, or control physical equipment.',
     },
     prospecting: {
       title: 'Solar Field Prospecting (MapLibre GL)',
@@ -230,11 +229,11 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
         fixed_tilt: 'Fixed Tilt',
         agrivoltaic: 'Agrivoltaic',
       },
-      helperText: 'Click or zoom on any rural parcel to compute solar potential in real time.',
+      helperText: 'Click or zoom on a rural parcel to estimate solar potential with the local model.',
       hud: {
         coordinates: 'Coordinates',
         deciderPrefix: '⚡ Strands Decider 2B: ',
-        frugalSavingsPrefix: 'Frugal Savings: ',
+        frugalSavingsPrefix: 'Energy estimate: ',
         capacity: 'Capacity',
         turnkeyCapex: 'Turnkey CapEx',
         payback: 'Payback',
@@ -242,7 +241,7 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
         tenYearReturn: '10-Year Return:',
         netUsd: 'net USD',
         annualGenSuffix: 'MWh/yr',
-        viewProposal: 'View Amazon Bedrock Executive Proposal',
+        viewProposal: 'View generated project summary',
       },
       modal: {
         latency: 'Latency: ',
@@ -253,49 +252,43 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       },
     },
     benchmark: {
-      title: 'Frugal Architecture Benchmark: Strands Decider 2B vs Frontier LLMs',
-      subtitle: 'Comparison of decision latency, energy consumption, and compute cost in telemetry tool dispatch.',
-      bonusBadge: 'Rubric Bonus: +30% Use of Decider 2B',
-      headers: {
-        metric: 'Evaluation Metric',
-        decider: 'AWS Strands Decider 2B (Kuarahy AX)',
-        frontier: 'Frontier LLM (70B+ in Cloud)',
-        efficiency: 'Efficiency Factor',
+      title: 'What this demo measures',
+      subtitle: 'The values below are generated by a local solar simulation and are not field measurements or model benchmarks.',
+      details: [
+        'Telemetry and equipment behavior are simulated; no physical tracker or sensor is connected.',
+        'Decision duration is measured for an individual server request and includes local fallback time when used. It is not a P95 benchmark.',
+        'Energy consumption, energy savings, and comparisons against other models are not measured by this application.',
+        'Financial outputs are estimates from the local valuation model, not investment advice or verified savings.',
+      ],
+    },
+    provenance: {
+      sample: 'Sample UI values — no decision request completed yet.',
+      liveDecider: 'Remote decision returned by the configured Strands Decider endpoint.',
+      localDecider: 'Local heuristic fallback; no Decider inference was attributed.',
+      deciderReasons: {
+        endpoint_not_configured: 'No endpoint configured',
+        request_failed: 'Endpoint request failed',
+        invalid_response: 'Endpoint response did not match the expected contract',
       },
-      rows: {
-        latency: {
-          name: 'Decision Latency (P95)',
-          decider: '< 115 ms (measured: 14ms)',
-          frontier: '~1,850 ms',
-          factor: '16x faster',
-        },
-        energy: {
-          name: 'Energy Consumption / Decision',
-          decider: '~0.00008 Wh (Edge/Graviton)',
-          frontier: '~0.24 Wh (arXiv: 2508.15734)',
-          factor: '3,000x more efficient',
-        },
-        rainwash: {
-          name: 'Autonomous Mechatronic Rainwash',
-          decider: 'Automatic 65° tilt actuation',
-          frontier: 'N/A / Inoperable at Edge',
-          factor: '$1,850 USD/yr saved',
-        },
-        gain: {
-          name: 'Mechatronic Energy Gain',
-          decider: '+24.8% MWh vs Fixed-Tilt Panel',
-          frontier: '0% (Pure inference)',
-          factor: 'Peak Performance',
-        },
+      liveBedrock: 'Summary returned by Amazon Bedrock using the configured model.',
+      localBedrock: 'Simulated local summary; Amazon Bedrock did not generate this content.',
+      bedrockReasons: {
+        disabled: 'Bedrock is disabled',
+        request_failed: 'Bedrock request failed',
+        invalid_response: 'Bedrock returned no usable text',
       },
+      modelLabel: 'Model',
+      measuredDuration: 'Request duration',
+      noEnergyMeasurement: 'Not measured',
+      noComparison: 'No comparison available',
     },
   },
   es: {
     header: {
       title: 'Kuarahy AX',
-      deciderBadge: 'Strands Decider 2B',
-      activeMechatronicsBadge: 'Mecatrónica Activa',
-      subtitlePrefix: 'Seguimiento Solar & Autolavado Autónomo · ',
+      deciderBadge: 'Endpoint Strands opcional',
+      activeMechatronicsBadge: 'Simulación',
+      subtitlePrefix: 'Seguimiento y autolavado simulados · ',
       frugalQuote: '"The Frugal Architect"',
     },
     tabs: {
@@ -305,39 +298,38 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       secondaryBadge: 'Secundaria',
     },
     banner: {
-      featureTitle: 'Feature Principal: Ganancia de Energía & Autolavado por Mecatrónica',
-      featureDesc:
-        'Los paneles fijos pierden hasta un 30% de energía por coseno de incidencia y hasta un 15% adicional por suciedad (soiling). Kuarahy AX conecta la mecatrónica del seguidor a AWS Strands Decider 2B (<115ms) para orientar los paneles al sol en tiempo real, y activar autolavado hidromecánico a 65° cuando detecta lluvia, ahorrando miles de dólares en cuadrillas de limpieza.',
-      p95Label: 'Decider 2B P95',
+      featureTitle: 'Simulación de telemetría solar y seguimiento',
+      featureDesc: 'Simulación interactiva de seguimiento solar. Si se configura, el servidor puede solicitar una elección a un endpoint Strands Decider; de lo contrario usa una heurística local identificada. No hay un seguidor físico conectado.',
+      durationLabel: 'Duración de la solicitud',
     },
     kpi: {
       mechatronicAdvantage: {
-        title: 'Ventaja Mecatrónica',
-        comparison: 'vs panel fijo tradicional',
-        statusTag: 'Hero Metric',
+        title: 'Ganancia simulada del seguidor',
+        comparison: 'simulación vs referencia de panel fijo',
+        statusTag: 'Simulación',
       },
       netActivePower: {
         title: 'Potencia Activa Neta',
-        comparison: 'excedente neto instantáneo',
+        comparison: 'diferencia de potencia simulada',
         statusTagPrefix: 'fijo',
       },
       deciderLatency: {
-        title: 'Latencia Decider 2B',
-        comparison: '99.2% menor que Cloud LLM',
-        statusTag: 'Werner Vogels P95',
+        title: 'Duración de solicitud de decisión',
+        comparison: 'duración por solicitud; no es benchmark',
+        statusTag: 'Duración de solicitud',
       },
       crewSavings: {
-        title: 'Ahorro Cuadrillas',
-        activeComparison: 'Autolavado 65° activo',
-        idleComparison: 'Lluvia elimina lavado manual',
-        statusTag: 'O&M Optimizado',
+        title: 'Estimación de costo de limpieza',
+        activeComparison: 'escenario ilustrativo de autolavado',
+        idleComparison: 'Sin estimación para este escenario',
+        statusTag: 'Ilustrativo',
       },
     },
     twin: {
-      title: 'Gemelo Digital: Actuación Mecatrónica en Tiempo Real',
-      subtitle: 'Visualización física de la trayectoria solar, ángulo de inclinación del panel y vectores de radiación normales.',
+      title: 'Gemelo Digital: Comportamiento Mecatrónico Simulado',
+      subtitle: 'Visualización interactiva de una trayectoria solar, inclinación y vectores de radiación simulados.',
       motorTilt: 'Tilt Motor',
-      evaluating: 'Strands Decider 2B evaluando...',
+      evaluating: 'Evaluando escenario solar...',
       solarHour: 'Hora Solar',
       elevation: 'Elevación',
       directGti: 'GTI Directo',
@@ -357,20 +349,19 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       },
     },
     sidebar: {
-      focusTitle: 'Ventaja Mecatrónica Cuantificada',
-      focusSubPrefix: 'Potencia con seguidor mecatrónico activo (vs ',
+      focusTitle: 'Escenario Mecatrónico Simulado',
+      focusSubPrefix: 'Potencia simulada del seguidor (vs ',
       fixedSuffix: ' fijo)',
       surplusTextPrefix: '+',
-      surplusTextSuffix: ' kW de generación neta excedente instantánea gracias a los microajustes de Strands Decider 2B.',
-      rainwashActivePrefix: '🌧️ Modo Autolavado Activo: Inclinación a 65° aprovecha el agua de lluvia natural para lavar ',
-      rainwashActiveMiddle: ' de polvo acumulado. Ahorro proyectado de $',
-      rainwashActiveSuffix: ' USD/año en servicio de limpieza manual.',
-      verdictTitle: 'Dictamen Strands Decider 2B',
+      surplusTextSuffix: ' kW de excedente simulado; no hay equipos físicos conectados.',
+      rainwashActivePrefix: '🌧️ Escenario simulado de autolavado: inclinación a 65° con ',
+      rainwashActiveMiddle: ' de suciedad. Estimación local ilustrativa de costo de limpieza: $',
+      rainwashActiveSuffix: ' USD/año; no son ahorros verificados.',
+      verdictTitle: 'Procedencia de la decisión',
       selectedTool: 'Herramienta Seleccionada',
-      confidence: 'Nivel de Confianza Calibrado',
+      confidence: 'Puntuación de confianza reportada',
       frugalTitle: '🏛️ Filosofía Frugal (Werner Vogels)',
-      frugalText:
-        'Un actuador de motorreductor no puede esperar 2 segundos a que un LLM en la nube responda. Strands Decider 2B resuelve en 14ms en el borde, ahorrando 0.24 Wh por ciclo de control.',
+      frugalText: 'Esta demo informa la duración de una solicitud individual. No mide consumo energético, no compara latencia entre modelos ni controla equipos físicos.',
     },
     prospecting: {
       title: 'Prospección de Campos Solares (MapLibre GL)',
@@ -385,11 +376,11 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
         fixed_tilt: 'Fixed Tilt',
         agrivoltaic: 'Agrivoltaic',
       },
-      helperText: 'Hacé click o zoom sobre cualquier terreno rural para calcular el potencial solar en tiempo real.',
+      helperText: 'Hacé click o zoom sobre un terreno rural para estimar el potencial solar con el modelo local.',
       hud: {
         coordinates: 'Coordenadas',
         deciderPrefix: '⚡ Strands Decider 2B: ',
-        frugalSavingsPrefix: 'Ahorro Frugal: ',
+        frugalSavingsPrefix: 'Estimación energética: ',
         capacity: 'Potencia',
         turnkeyCapex: 'CapEx Turnkey',
         payback: 'Payback',
@@ -397,7 +388,7 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
         tenYearReturn: 'Retorno a 10 años:',
         netUsd: 'USD netos',
         annualGenSuffix: 'MWh/año',
-        viewProposal: 'Ver Propuesta Ejecutiva Amazon Bedrock',
+        viewProposal: 'Ver resumen de proyecto generado',
       },
       modal: {
         latency: 'Latencia: ',
@@ -408,41 +399,35 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       },
     },
     benchmark: {
-      title: 'Benchmark de Arquitectura Frugal: Strands Decider 2B vs Frontier LLMs',
-      subtitle: 'Comparativa de latencia, consumo energético y costo computacional en despacho de herramientas de telemetría.',
-      bonusBadge: 'Rubric Bonus: +30% Use of Decider 2B',
-      headers: {
-        metric: 'Métrica de Evaluación',
-        decider: 'AWS Strands Decider 2B (Kuarahy AX)',
-        frontier: 'Frontier LLM (70B+ en Cloud)',
-        efficiency: 'Factor de Eficiencia',
+      title: 'Qué mide esta demo',
+      subtitle: 'Los valores se generan mediante una simulación solar local; no son mediciones de campo ni benchmarks de modelos.',
+      details: [
+        'La telemetría y el comportamiento del equipo son simulados; no hay sensores ni seguidores físicos conectados.',
+        'La duración de decisión corresponde a una solicitud individual al servidor e incluye el tiempo de fallback local cuando se usa. No es un benchmark P95.',
+        'La aplicación no mide consumo ni ahorro energético y no compara modelos.',
+        'Los resultados financieros son estimaciones del modelo de valuación local, no asesoramiento financiero ni ahorros verificados.',
+      ],
+    },
+    provenance: {
+      sample: 'Valores de muestra de la interfaz: aún no se completó una solicitud de decisión.',
+      liveDecider: 'Elección remota devuelta por el endpoint Strands Decider configurado.',
+      localDecider: 'Fallback heurístico local; no se atribuyó inferencia al Decider.',
+      deciderReasons: {
+        endpoint_not_configured: 'No hay endpoint configurado',
+        request_failed: 'Falló la solicitud al endpoint',
+        invalid_response: 'La respuesta no coincide con el contrato esperado',
       },
-      rows: {
-        latency: {
-          name: 'Latencia de Decisión (P95)',
-          decider: '< 115 ms (medido: 14ms)',
-          frontier: '~1,850 ms',
-          factor: '16x más rápido',
-        },
-        energy: {
-          name: 'Consumo Energético / Decisión',
-          decider: '~0.00008 Wh (Edge/Graviton)',
-          frontier: '~0.24 Wh (arXiv: 2508.15734)',
-          factor: '3,000x más eficiente',
-        },
-        rainwash: {
-          name: 'Autolavado Mecatrónico por Lluvia',
-          decider: 'Inclinación automática a 65°',
-          frontier: 'No aplica / Inoperativo en Edge',
-          factor: '$1.850 USD/año ahorrados',
-        },
-        gain: {
-          name: 'Ganancia Energética Mecatrónica',
-          decider: '+24.8% MWh vs Panel Fijo',
-          frontier: '0% (Inferencia pura)',
-          factor: 'Máximo Rendimiento',
-        },
+      liveBedrock: 'Resumen devuelto por Amazon Bedrock usando el modelo configurado.',
+      localBedrock: 'Resumen local simulado; Amazon Bedrock no generó este contenido.',
+      bedrockReasons: {
+        disabled: 'Bedrock está deshabilitado',
+        request_failed: 'Falló la solicitud a Bedrock',
+        invalid_response: 'Bedrock no devolvió texto utilizable',
       },
+      modelLabel: 'Modelo',
+      measuredDuration: 'Duración de la solicitud',
+      noEnergyMeasurement: 'Sin medición',
+      noComparison: 'Sin comparación disponible',
     },
   },
 }

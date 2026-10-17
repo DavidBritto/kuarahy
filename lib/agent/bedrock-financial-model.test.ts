@@ -21,8 +21,8 @@ import { calculateSolarValuation } from '../solar-valuation'
 const coords = { lat: -31.4201, lon: -64.1888 }
 const valuation = calculateSolarValuation({ coords, areaHa: 15, topology: 'single_axis_tracker' })
 
-function generateSummary() {
-  return generateBedrockProspectingSummary({ metrics: valuation, coords, deciderLatencyMs: 84 })
+function generateSummary(deciderEngine: 'strands-decider-2b' | 'heuristic-fallback' = 'heuristic-fallback', deciderModel: string | null = null) {
+  return generateBedrockProspectingSummary({ metrics: valuation, coords, deciderLatencyMs: 84, deciderEngine, deciderModel })
 }
 
 describe('Amazon Bedrock Financial Model Synthesis', () => {
@@ -40,7 +40,7 @@ describe('Amazon Bedrock Financial Model Synthesis', () => {
       output: { message: { content: [{ text: 'A live investment thesis.' }] } },
     })
 
-    const summary = await generateSummary()
+    const summary = await generateSummary('strands-decider-2b', 'checkpoint-name')
 
     expect(summary).toMatchObject({
       executiveSummary: 'A live investment thesis.',
@@ -55,6 +55,8 @@ describe('Amazon Bedrock Financial Model Synthesis', () => {
       modelId: 'anthropic.claude-3-haiku-20240307-v1:0',
       inferenceConfig: { maxTokens: 600, temperature: 0.3 },
     })
+    const request = command.input as { messages: Array<{ content: Array<{ text: string }> }> }
+    expect(request.messages[0].content[0].text).toContain('validated remote Strands Decider response from model checkpoint-name')
   })
 
   it('uses an explicitly labeled local summary and makes no SDK call when disabled', async () => {

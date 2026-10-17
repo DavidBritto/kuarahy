@@ -8,7 +8,8 @@ import SolarMetricCard from '@/components/SolarMetricCard'
 import BorderBeam from '@/components/BorderBeam'
 import type { HourlyPoint, PanelConfig } from '@/lib/types'
 import { getPosition } from 'suncalc'
-import type { KuarahyToolAction } from '@/lib/agent/decider-tool-selection'
+import type { DeciderDecision, KuarahyToolAction } from '@/lib/agent/decider-tool-selection'
+import { getDeciderProvenanceMessage } from '@/lib/agent/provenance-labels'
 import { DICTIONARY, type Locale } from '@/lib/i18n'
 import { Zap, Sun, Activity, Cpu, Droplets, ShieldAlert, Sparkles, Globe } from 'lucide-react'
 
@@ -77,8 +78,9 @@ export default function Home() {
   const [soilingLossPct, setSoilingLossPct] = useState<number>(8.5)
   const [batterySocPct, setBatterySocPct] = useState<number>(65)
   const [tariffPrice, setTariffPrice] = useState<number>(0.12)
+  const [hasReceivedActuation, setHasReceivedActuation] = useState(false)
 
-  // Real-time Mechatronics decision from backend
+  // Synthetic values keep the offline demo populated until its first API response.
   const [actuationData, setActuationData] = useState<{
     status: string
     motorTiltDeg: number
@@ -88,12 +90,7 @@ export default function Home() {
     powerDeltaKw: number
     isRaining: boolean
     cleaningSavingsYearUsd: number
-    decision: {
-      choice: KuarahyToolAction
-      confidence: number
-      latencyMs: number
-      reasoning: string
-    }
+    decision: DeciderDecision<KuarahyToolAction>
   }>({
     status: 'ACTIVE_TRACKING',
     motorTiltDeg: 28,
@@ -106,8 +103,13 @@ export default function Home() {
     decision: {
       choice: 'adjust_solar_tracker',
       confidence: 0.96,
-      latencyMs: 14,
-      reasoning: 'Daylight generation active. Actuating dual-axis tracker motors to maximize GTI.',
+      latencyMs: 0,
+      engine: 'heuristic-fallback',
+      model: null,
+      whEstimated: null,
+      fallbackReason: 'endpoint_not_configured',
+      reasoning: 'Sample display value. No decision request has completed.',
+      timestamp: 0,
     },
   })
 
@@ -117,6 +119,12 @@ export default function Home() {
   const points = buildDayTelemetry(-27.47, -58.83)
   const safeIndex = Math.max(0, Math.min(points.length - 1, hourIndex))
   const currentPoint = points[safeIndex]
+  const decisionSource = getDeciderProvenanceMessage(actuationData.decision, hasReceivedActuation, {
+    sample: t.provenance.sample,
+    live: t.provenance.liveDecider,
+    fallback: t.provenance.localDecider,
+    fallbackReasons: t.provenance.deciderReasons,
+  })
 
   // Query Strands Decider 2B Mechatronics Actuation on state changes
   useEffect(() => {
@@ -152,6 +160,7 @@ export default function Home() {
             cleaningSavingsYearUsd: data.mechatronics.cleaningSavingsYearUsd,
             decision: data.decision,
           })
+          setHasReceivedActuation(true)
         }
       } catch (err) {
         console.error('Failed to actuate mechatronics:', err)
@@ -307,8 +316,8 @@ export default function Home() {
           </div>
           <div className="shrink-0 flex items-center gap-3">
             <div className="px-3.5 py-2 rounded-xl bg-zinc-950/90 border border-orange-500/30 text-right backdrop-blur-md shadow-[0_0_15px_rgba(249,115,22,0.1)]">
-              <span className="text-[9px] font-mono text-zinc-500 uppercase block font-semibold">{t.banner.p95Label}</span>
-              <span className="text-emerald-400 font-mono font-bold text-xs">{actuationData.decision.latencyMs} ms</span>
+              <span className="text-[9px] font-mono text-zinc-500 uppercase block font-semibold">{t.banner.durationLabel}</span>
+              <span className="text-emerald-400 font-mono font-bold text-xs">{hasReceivedActuation ? `${actuationData.decision.latencyMs} ms` : '—'}</span>
             </div>
           </div>
         </section>
@@ -338,9 +347,8 @@ export default function Home() {
 
           <SolarMetricCard
             title={t.kpi.deciderLatency.title}
-            value={actuationData.decision.latencyMs}
+            value={hasReceivedActuation ? actuationData.decision.latencyMs : '—'}
             unit="ms"
-            incrementPct={99.2}
             comparisonText={t.kpi.deciderLatency.comparison}
             icon={Cpu}
             statusTag={t.kpi.deciderLatency.statusTag}
@@ -348,7 +356,7 @@ export default function Home() {
 
           <SolarMetricCard
             title={t.kpi.crewSavings.title}
-            value={actuationData.cleaningSavingsYearUsd > 0 ? `$${actuationData.cleaningSavingsYearUsd}` : '$1,850'}
+            value={actuationData.cleaningSavingsYearUsd > 0 ? `$${actuationData.cleaningSavingsYearUsd}` : '—'}
             unit="USD/yr"
             incrementPct={actuationData.isRaining ? 24.8 : 8.5}
             comparisonText={actuationData.isRaining ? t.kpi.crewSavings.activeComparison : t.kpi.crewSavings.idleComparison}
@@ -515,7 +523,7 @@ export default function Home() {
 
                   {actuationData.cleaningSavingsYearUsd > 0 && (
                     <div className="p-3 bg-sky-950/30 rounded-xl border border-sky-500/30 text-[11px] text-sky-200">
-                      {t.sidebar.rainwashActivePrefix}8.5%{t.sidebar.rainwashActiveMiddle}<strong>{actuationData.cleaningSavingsYearUsd}</strong>{t.sidebar.rainwashActiveSuffix}
+                      {t.sidebar.rainwashActivePrefix}{soilingLossPct}%{t.sidebar.rainwashActiveMiddle}<strong>{actuationData.cleaningSavingsYearUsd}</strong>{t.sidebar.rainwashActiveSuffix}
                     </div>
                   )}
                 </div>
@@ -524,15 +532,21 @@ export default function Home() {
                 <div className="p-5 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 shadow-xl space-y-3 font-mono text-xs backdrop-blur-xl">
                   <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
                     <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider flex items-center gap-1.5 font-sans">
-                      <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className={`w-2 h-2 rounded-full ${hasReceivedActuation && actuationData.decision.engine === 'strands-decider-2b' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
                       {t.sidebar.verdictTitle}
                     </span>
-                    <span className="text-[10px] text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 font-bold">
-                      {actuationData.decision.latencyMs} ms
+                    <span className="text-[10px] text-zinc-300 bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-700 font-bold">
+                      {hasReceivedActuation ? `${actuationData.decision.latencyMs} ms` : '—'}
                     </span>
                   </div>
 
                   <div className="space-y-2">
+                    <div className="text-[11px] text-zinc-300 font-sans leading-relaxed" role="status">
+                      {decisionSource}
+                    </div>
+                    {hasReceivedActuation && actuationData.decision.engine === 'strands-decider-2b' && actuationData.decision.model && (
+                      <div className="text-[10px] text-zinc-500">{t.provenance.modelLabel}: {actuationData.decision.model}</div>
+                    )}
                     <div>
                       <span className="text-[10px] text-zinc-500 uppercase block font-semibold">{t.sidebar.selectedTool}</span>
                       <span className="text-orange-400 font-bold text-sm">{actuationData.decision.choice}</span>
@@ -586,7 +600,7 @@ export default function Home() {
           </div>
         )}
 
-        {/* Global Frugal Benchmark Table with Glowing Accents */}
+        {/* Measurement and simulation disclosures */}
         <section className="relative p-6 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-xl space-y-4 overflow-hidden shadow-2xl">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-3 border-b border-zinc-800/80">
             <div>
@@ -598,49 +612,12 @@ export default function Home() {
                 {t.benchmark.subtitle}
               </p>
             </div>
-            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 self-start md:self-auto shadow-[0_0_10px_rgba(16,185,129,0.15)]">
-              {t.benchmark.bonusBadge}
-            </span>
+            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 self-start md:self-auto">{t.provenance.noComparison}</span>
           </div>
 
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs font-mono text-left">
-              <thead>
-                <tr className="border-b border-zinc-800 text-zinc-500 uppercase">
-                  <th className="py-2.5 px-3">{t.benchmark.headers.metric}</th>
-                  <th className="py-2.5 px-3 text-orange-400 font-bold">{t.benchmark.headers.decider}</th>
-                  <th className="py-2.5 px-3 text-zinc-400">{t.benchmark.headers.frontier}</th>
-                  <th className="py-2.5 px-3 text-emerald-400">{t.benchmark.headers.efficiency}</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-zinc-900 text-zinc-300">
-                <tr className="hover:bg-zinc-900/40 transition-colors">
-                  <td className="py-2.5 px-3 font-medium text-white">{t.benchmark.rows.latency.name}</td>
-                  <td className="py-2.5 px-3 text-orange-400 font-bold">{t.benchmark.rows.latency.decider}</td>
-                  <td className="py-2.5 px-3 text-zinc-400">{t.benchmark.rows.latency.frontier}</td>
-                  <td className="py-2.5 px-3 text-emerald-400 font-bold">{t.benchmark.rows.latency.factor}</td>
-                </tr>
-                <tr className="hover:bg-zinc-900/40 transition-colors">
-                  <td className="py-2.5 px-3 font-medium text-white">{t.benchmark.rows.energy.name}</td>
-                  <td className="py-2.5 px-3 text-orange-400 font-bold">{t.benchmark.rows.energy.decider}</td>
-                  <td className="py-2.5 px-3 text-zinc-400">{t.benchmark.rows.energy.frontier}</td>
-                  <td className="py-2.5 px-3 text-emerald-400 font-bold">{t.benchmark.rows.energy.factor}</td>
-                </tr>
-                <tr className="hover:bg-zinc-900/40 transition-colors">
-                  <td className="py-2.5 px-3 font-medium text-white">{t.benchmark.rows.rainwash.name}</td>
-                  <td className="py-2.5 px-3 text-orange-400 font-bold">{t.benchmark.rows.rainwash.decider}</td>
-                  <td className="py-2.5 px-3 text-zinc-400">{t.benchmark.rows.rainwash.frontier}</td>
-                  <td className="py-2.5 px-3 text-emerald-400 font-bold">{t.benchmark.rows.rainwash.factor}</td>
-                </tr>
-                <tr className="hover:bg-zinc-900/40 transition-colors">
-                  <td className="py-2.5 px-3 font-medium text-white">{t.benchmark.rows.gain.name}</td>
-                  <td className="py-2.5 px-3 text-orange-400 font-bold">{t.benchmark.rows.gain.decider}</td>
-                  <td className="py-2.5 px-3 text-zinc-400">{t.benchmark.rows.gain.frontier}</td>
-                  <td className="py-2.5 px-3 text-emerald-400 font-bold">{t.benchmark.rows.gain.factor}</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <ul className="space-y-2 text-xs text-zinc-300">
+            {t.benchmark.details.map((detail) => <li key={detail} className="flex gap-2"><span className="text-amber-400">•</span><span>{detail}</span></li>)}
+          </ul>
         </section>
       </main>
     </div>

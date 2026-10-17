@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import * as maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 import { getSolarHeatmapGeoJSON, estimateGtiFromCoords } from '@/lib/solar-heatmap-data'
 import type { SolarFieldTopology, SolarValuationMetrics } from '@/lib/solar-valuation'
 import type { BedrockProspectingSummaryOutput } from '@/lib/agent/bedrock-financial-model'
 import type { DeciderDecision } from '@/lib/agent/decider-tool-selection'
+import { getBedrockProvenanceMessage, getDeciderProvenanceMessage } from '@/lib/agent/provenance-labels'
 import { DICTIONARY, type Locale } from '@/lib/i18n'
 
 // Set local web worker URL to prevent bundler/worker resolution failures
@@ -20,8 +21,7 @@ interface ProspectApiResponse {
   valuation: SolarValuationMetrics
   bedrock: BedrockProspectingSummaryOutput
   meta: {
-    frugalSavingsWh: number
-    frugalLatencySavingsMs: number
+    frugalSavingsWh: number | null
   }
 }
 
@@ -29,6 +29,8 @@ interface SolarHeatmapProps {
   onProspectResolved?: (data: ProspectApiResponse) => void
   locale?: Locale
 }
+
+type InspectLocation = (lat: number, lon: number, hectares: number, topology: SolarFieldTopology) => Promise<void>
 
 export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: SolarHeatmapProps) {
   const t = DICTIONARY[locale]
@@ -45,6 +47,9 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
     lon: -64.1888, // Córdoba default
   })
   const [showBedrockModal, setShowBedrockModal] = useState<boolean>(false)
+  const areaHaRef = useRef(areaHa)
+  const topologyRef = useRef(topology)
+  const inspectLocationRef = useRef<InspectLocation>(async () => {})
 
   // Initialize MapLibre
   useEffect(() => {
@@ -155,14 +160,14 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
       })
 
       // Initial inspection at default center
-      inspectLocation(-31.4201, -64.1888, 10, 'single_axis_tracker')
+      inspectLocationRef.current(-31.4201, -64.1888, 10, 'single_axis_tracker')
     })
 
     // Handle map click for parcel prospecting
     map.on('click', (e) => {
       const { lng, lat } = e.lngLat
       setSelectedCoords({ lat, lon: lng })
-      inspectLocation(lat, lng, areaHa, topology)
+      inspectLocationRef.current(lat, lng, areaHaRef.current, topologyRef.current)
     })
 
     const handleResize = () => {
@@ -184,7 +189,7 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
   }, [])
 
   // Updates parcel polygon on map
-  const updateParcelPolygon = (lat: number, lon: number, hectares: number) => {
+  const updateParcelPolygon = useCallback((lat: number, lon: number, hectares: number) => {
     if (!mapRef.current) return
     const source = mapRef.current.getSource('selected-parcel') as maplibregl.GeoJSONSource
     if (!source) return
@@ -221,10 +226,10 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
       el.className = 'w-4 h-4 bg-amber-500 rounded-full border-2 border-white shadow-lg animate-pulse'
       markerRef.current = new maplibregl.Marker({ element: el }).setLngLat([lon, lat]).addTo(mapRef.current)
     }
-  }
+  }, [])
 
   // Trigger server-side prospecting calculation
-  const inspectLocation = async (
+  const inspectLocation = useCallback(async (
     lat: number,
     lon: number,
     ha: number,
@@ -259,7 +264,13 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
     } finally {
       setLoading(false)
     }
-  }
+  }, [onProspectResolved, updateParcelPolygon])
+
+  useEffect(() => {
+    areaHaRef.current = areaHa
+    topologyRef.current = topology
+    inspectLocationRef.current = inspectLocation
+  }, [areaHa, topology, inspectLocation])
 
   const handleAreaChange = (ha: number) => {
     setAreaHa(ha)
@@ -362,11 +373,22 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
             </div>
             {/* Decider 2B Badge */}
             <div className="text-right">
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                <span>{t.prospecting.hud.deciderPrefix}{prospectData.decider.latencyMs}ms</span>
+                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium border ${prospectData.decider.engine === 'strands-decider-2b' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30' : 'bg-amber-500/10 text-amber-300 border-amber-500/30'}`}>
+                <span>{getDeciderProvenanceMessage(prospectData.decider, true, {
+                  sample: t.provenance.sample,
+                  live: t.provenance.liveDecider,
+                  fallback: t.provenance.localDecider,
+                  fallbackReasons: t.provenance.deciderReasons,
+                })}</span>
               </span>
               <span className="block text-[9px] text-zinc-400">
-                {t.prospecting.hud.frugalSavingsPrefix}{prospectData.meta.frugalSavingsWh.toFixed(3)} Wh
+                {t.provenance.measuredDuration}: {prospectData.decider.latencyMs}ms
+              </span>
+              {prospectData.decider.engine === 'strands-decider-2b' && prospectData.decider.model && (
+                <span className="block text-[9px] text-zinc-500">{t.provenance.modelLabel}: {prospectData.decider.model}</span>
+              )}
+              <span className="block text-[9px] text-zinc-400" title={t.provenance.noEnergyMeasurement}>
+                {t.prospecting.hud.frugalSavingsPrefix}{prospectData.meta.frugalSavingsWh === null ? t.provenance.noEnergyMeasurement : `${prospectData.meta.frugalSavingsWh.toFixed(3)} Wh`}
               </span>
             </div>
           </div>
@@ -435,13 +457,22 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
             </button>
 
             <div className="flex items-center gap-2 pb-3 border-b border-zinc-800">
-              <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-500/10 text-purple-400 border border-purple-500/30">
-                Amazon Bedrock ({prospectData.bedrock.modelId})
+              <span className={`px-2 py-0.5 rounded text-[10px] font-mono border ${prospectData.bedrock.engine === 'amazon-bedrock' ? 'bg-purple-500/10 text-purple-400 border-purple-500/30' : 'bg-amber-500/10 text-amber-300 border-amber-500/30'}`}>
+                {getBedrockProvenanceMessage(prospectData.bedrock, {
+                  live: t.provenance.liveBedrock,
+                  fallback: t.provenance.localBedrock,
+                })}
               </span>
               <span className="text-xs text-zinc-400 font-mono">
-                {t.prospecting.modal.latency}{prospectData.bedrock.llmLatencyMs}ms
+                {t.provenance.measuredDuration}: {prospectData.bedrock.llmLatencyMs}ms
               </span>
             </div>
+            {prospectData.bedrock.engine === 'amazon-bedrock' && prospectData.bedrock.modelId && (
+              <p className="mt-2 text-[10px] text-zinc-500">{t.provenance.modelLabel}: {prospectData.bedrock.modelId}</p>
+            )}
+            {prospectData.bedrock.engine === 'local-fallback' && prospectData.bedrock.fallbackReason && (
+              <p className="mt-2 text-[10px] text-amber-300">{t.provenance.bedrockReasons[prospectData.bedrock.fallbackReason]}</p>
+            )}
 
             <h3 className="text-lg font-bold text-amber-400 mt-4">
               {t.prospecting.modal.title}

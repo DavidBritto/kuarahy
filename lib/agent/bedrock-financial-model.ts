@@ -17,6 +17,8 @@ export interface BedrockProspectingSummaryInput {
   metrics: SolarValuationMetrics
   coords: { lat: number; lon: number }
   deciderLatencyMs: number
+  deciderEngine: 'strands-decider-2b' | 'heuristic-fallback'
+  deciderModel: string | null
 }
 
 export interface BedrockProspectingSummaryOutput {
@@ -38,7 +40,10 @@ export async function generateBedrockProspectingSummary(
   input: BedrockProspectingSummaryInput
 ): Promise<BedrockProspectingSummaryOutput> {
   const startTime = performance.now()
-  const { metrics, coords, deciderLatencyMs } = input
+  const { metrics, coords, deciderLatencyMs, deciderEngine, deciderModel } = input
+  const decisionProvenance = deciderEngine === 'strands-decider-2b'
+    ? `A validated remote Strands Decider response from model ${deciderModel ?? 'unknown'} selected the tool in ${deciderLatencyMs}ms.`
+    : `A local heuristic fallback selected the tool; no Strands Decider inference was attributed (request duration ${deciderLatencyMs}ms).`
 
   const prompt = `You are the lead solar energy economist for Kuarahy Solar AX.
 A field parcel of ${metrics.areaHa.toFixed(1)} hectares at (${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}) was analyzed:
@@ -52,7 +57,7 @@ A field parcel of ${metrics.areaHa.toFixed(1)} hectares at (${coords.lat.toFixed
 - 10-Year Cumulative Net Return: $${(metrics.tenYearNetReturnUsd / 1_000_000).toFixed(2)}M USD
 - 20-Year Cumulative Net Return: $${(metrics.twentyYearNetReturnUsd / 1_000_000).toFixed(2)}M USD
 - CO2 Offset: ${metrics.co2OffsetTonsPerYear.toLocaleString()} tons CO2/year
-- Decision Model: AWS Strands Decider 2B resolved tool selection in ${deciderLatencyMs}ms.
+- Decision provenance: ${decisionProvenance}
 
 Provide:
 1. An executive 2-paragraph investment thesis for the landowner or clean energy investor.

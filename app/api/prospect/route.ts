@@ -41,6 +41,8 @@ export async function POST(req: NextRequest) {
       metrics: valuation,
       coords: { lat, lon },
       deciderLatencyMs: deciderDecision.latencyMs,
+      deciderEngine: deciderDecision.engine === 'strands-decider-2b' ? 'strands-decider-2b' : 'heuristic-fallback',
+      deciderModel: deciderDecision.engine === 'strands-decider-2b' ? deciderDecision.model : null,
     })
 
     return NextResponse.json({
