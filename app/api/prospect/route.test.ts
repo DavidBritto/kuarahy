@@ -3,7 +3,10 @@ import { POST } from './route'
 import { NextRequest } from 'next/server'
 
 describe('POST /api/prospect', () => {
-  beforeEach(() => vi.stubEnv('STRANDS_DECIDER_ENDPOINT', ''))
+  beforeEach(() => {
+    vi.stubEnv('STRANDS_DECIDER_ENDPOINT', '')
+    vi.stubEnv('BEDROCK_ENABLED', 'false')
+  })
   afterEach(() => vi.unstubAllEnvs())
 
   it('returns solar prospect analysis with an explicit local decision fallback when unconfigured', async () => {

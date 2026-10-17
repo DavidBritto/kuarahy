@@ -23,14 +23,16 @@ export interface BedrockProspectingSummaryOutput {
   executiveSummary: string
   keyHighlights: string[]
   frugalAnalysis: string
-  modelId: string
+  engine: 'amazon-bedrock' | 'local-fallback'
+  modelId: string | null
+  fallbackReason?: 'disabled' | 'request_failed' | 'invalid_response'
   llmLatencyMs: number
   generatedAt: number
 }
 
 /**
- * Generates an executive financial proposal using Amazon Bedrock Converse API.
- * Falls back to high-grade deterministic synthesis if AWS credentials are not configured.
+ * Uses Amazon Bedrock only when explicitly enabled. AWS SDK credentials are resolved
+ * through its default provider chain; credentials are never inspected by this module.
  */
 export async function generateBedrockProspectingSummary(
   input: BedrockProspectingSummaryInput
@@ -59,8 +61,9 @@ Provide:
 
   const region = process.env.AWS_REGION || 'us-east-1'
   const modelId = process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-haiku-20240307-v1:0'
+  let fallbackReason: BedrockProspectingSummaryOutput['fallbackReason'] = 'disabled'
 
-  if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
+  if (process.env.BEDROCK_ENABLED === 'true') {
     try {
       const client = new BedrockRuntimeClient({ region })
       const command = new ConverseCommand({
@@ -78,20 +81,22 @@ Provide:
       })
 
       const response = await client.send(command)
-      const textOutput = response.output?.message?.content?.[0]?.text
+      const textOutput = response.output?.message?.content
+        ?.map((block) => block.text)
+        .find((text): text is string => typeof text === 'string' && text.trim().length > 0)
       const llmLatencyMs = Math.round(performance.now() - startTime)
 
       if (textOutput) {
         return parseBedrockResponse(textOutput, modelId, llmLatencyMs, metrics)
       }
+      fallbackReason = 'invalid_response'
     } catch {
-      // Graceful fallback to deterministic local synthesis
+      fallbackReason = 'request_failed'
     }
   }
 
-  // High-fidelity fallback for offline demo & local testing
   const llmLatencyMs = Math.round(performance.now() - startTime)
-  return createLocalExecutiveSummary(metrics, coords, deciderLatencyMs, llmLatencyMs, modelId)
+  return createLocalExecutiveSummary(metrics, coords, deciderLatencyMs, llmLatencyMs, fallbackReason)
 }
 
 function parseBedrockResponse(
@@ -104,10 +109,11 @@ function parseBedrockResponse(
     executiveSummary: rawText,
     keyHighlights: [
       `CapEx amortizado en ${metrics.paybackYears} años con retorno neto a 10 años de $${(metrics.tenYearNetReturnUsd / 1_000_000).toFixed(2)}M USD.`,
-      `Generación garantizada de ~${metrics.annualGenerationMwh.toLocaleString()} MWh anuales evitando ${metrics.co2OffsetTonsPerYear.toLocaleString()} toneladas de CO2.`,
-      `Decisión autónoma despachada por AWS Strands Decider 2B en baja latencia.`,
+      `Generación estimada de ~${metrics.annualGenerationMwh.toLocaleString()} MWh anuales evitando ${metrics.co2OffsetTonsPerYear.toLocaleString()} toneladas de CO2.`,
+      `La síntesis de Bedrock se completó en ${llmLatencyMs}ms.`,
     ],
-    frugalAnalysis: `Strands Decider 2B procesó la topografía y radiación en tiempo real ahorrando 0.24 Wh por ciclo de telemetría frente a un LLM generalista.`,
+    frugalAnalysis: 'Amazon Bedrock generated this executive summary using the configured model.',
+    engine: 'amazon-bedrock',
     modelId,
     llmLatencyMs,
     generatedAt: Date.now(),
@@ -119,13 +125,15 @@ function createLocalExecutiveSummary(
   coords: { lat: number; lon: number },
   deciderLatencyMs: number,
   llmLatencyMs: number,
-  modelId: string
+  fallbackReason: NonNullable<BedrockProspectingSummaryOutput['fallbackReason']>
 ): BedrockProspectingSummaryOutput {
   const capexM = (metrics.turnkeyCapexUsd / 1_000_000).toFixed(2)
   const return10YM = (metrics.tenYearNetReturnUsd / 1_000_000).toFixed(2)
   const return20YM = (metrics.twentyYearNetReturnUsd / 1_000_000).toFixed(2)
 
-  const summary = `La prospección solar sobre este lote de ${metrics.areaHa.toFixed(1)} hectáreas en (${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}) demuestra una viabilidad económica sobresaliente. Con una potencia instalable de ${metrics.installedCapacityMwp} MWp y arquitectura de ${metrics.topology === 'single_axis_tracker' ? 'seguimiento solar en un eje' : 'paneles fijos optimizados'}, el parque proyecta inyectar ~${metrics.annualGenerationMwh.toLocaleString()} MWh anuales a la red eléctrica.
+  const summary = `Resumen local simulado (Amazon Bedrock no generó este contenido; motivo: ${fallbackReason}).
+
+La prospección solar sobre este lote de ${metrics.areaHa.toFixed(1)} hectáreas en (${coords.lat.toFixed(4)}, ${coords.lon.toFixed(4)}) demuestra una viabilidad económica sobresaliente. Con una potencia instalable de ${metrics.installedCapacityMwp} MWp y arquitectura de ${metrics.topology === 'single_axis_tracker' ? 'seguimiento solar en un eje' : 'paneles fijos optimizados'}, el parque proyecta inyectar ~${metrics.annualGenerationMwh.toLocaleString()} MWh anuales a la red eléctrica.
 
 La inversión inicial de CapEx ($${capexM}M USD) se amortiza en un período de recuperación de apenas ${metrics.paybackYears} años, logrando un flujo neto acumulado de $${return10YM}M USD al décimo año y superando los $${return20YM}M USD al final del ciclo de vida útil de 20 años.`
 
@@ -134,11 +142,13 @@ La inversión inicial de CapEx ($${capexM}M USD) se amortiza en un período de r
     keyHighlights: [
       `CapEx inicial de $${capexM}M USD recuperable en ${metrics.paybackYears} años (ROI 10 años: +$${return10YM}M USD).`,
       `Inyección limpia estimada de ~${metrics.annualGenerationMwh.toLocaleString()} MWh/año con mitigación de ${metrics.co2OffsetTonsPerYear.toLocaleString()} tn CO2.`,
-      `Decisión preliminar de ingeniería catalogada en ${deciderLatencyMs}ms por AWS Strands Decider 2B.`,
+      `Decisión preliminar de ingeniería reportada en ${deciderLatencyMs}ms.`,
     ],
-    frugalAnalysis: `Alineado con las leyes de "The Frugal Architect" de Werner Vogels: el filtrado topográfico y cálculo actuarial corrió en microsegundos vía Strands Decider 2B en el Edge, reservando el procesamiento de Bedrock (${modelId}) exclusivamente para la síntesis de negocio de alto nivel.`,
-    modelId,
-    llmLatencyMs: Math.max(120, llmLatencyMs),
+    frugalAnalysis: `Resumen local simulado; Amazon Bedrock no generó este contenido (motivo: ${fallbackReason}).`,
+    engine: 'local-fallback',
+    modelId: null,
+    fallbackReason,
+    llmLatencyMs,
     generatedAt: Date.now(),
   }
 }
