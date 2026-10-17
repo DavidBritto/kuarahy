@@ -170,6 +170,7 @@ export class DeciderToolSelector<TState, TToolName extends string> {
 export type KuarahyToolAction =
   | 'evaluate_solar_prospect'    // Land parcel prospecting & investment valuation
   | 'adjust_solar_tracker'       // High-frequency dual/single-axis motor tracking
+  | 'clean_panels_rainwash'      // Steep tilt rainwash self-cleaning mechatronics
   | 'battery_arbitrage'          // Battery charge/discharge/grid peak injection
   | 'storm_safeguard'            // Stow panels to horizontal defense mode
   | 'standby_idle'               // Night or no irradiance change
@@ -182,6 +183,8 @@ export interface KuarahyAgentState {
   gti?: number                   // Global Tilted Irradiance in W/m²
   ghi?: number
   windSpeedKmh?: number          // For storm safety
+  precipitationMm?: number       // Rainfall in mm/h for washing decision
+  soilingLossPct?: number        // Dust / particulate soiling loss (0 - 25%)
   batterySocPct?: number         // Battery state of charge (0 - 100)
   tariffPriceUsdPerKwh?: number  // Real-time spot price
   cloudCoverPct?: number
@@ -199,6 +202,12 @@ export const KUARAHY_DECIDER_TOOLS: DeciderToolOption<KuarahyToolAction>[] = [
     label: 'Storm & High-Wind Safeguard Stow',
     description: 'Flattens solar trackers to 0° tilt to prevent structural damage.',
     whenToUse: 'When wind speed exceeds safety threshold (> 60 km/h) or hail alert is active.',
+  },
+  {
+    id: 'clean_panels_rainwash',
+    label: 'Rainfall Self-Cleaning Mechatronic Wash',
+    description: 'Tilts panels to steep angle (65°-75°) to wash away accumulated dust using rainfall.',
+    whenToUse: 'When rain is detected (> 1.5mm/h) and panel soiling loss exceeds threshold (> 4%).',
   },
   {
     id: 'adjust_solar_tracker',
@@ -234,6 +243,8 @@ export class KuarahySolarDecider extends DeciderToolSelector<KuarahyAgentState, 
         elevation: state.elevation ?? 0,
         gti: state.gti ?? 0,
         windSpeedKmh: state.windSpeedKmh ?? 0,
+        precipitationMm: state.precipitationMm ?? 0,
+        soilingLossPct: state.soilingLossPct ?? 0,
         batterySocPct: state.batterySocPct ?? 50,
         tariffPriceUsdPerKwh: state.tariffPriceUsdPerKwh ?? 0.12,
         cloudCoverPct: state.cloudCoverPct ?? 0,
@@ -256,6 +267,8 @@ export class KuarahySolarDecider extends DeciderToolSelector<KuarahyAgentState, 
     const batterySocPct = Number(state.batterySocPct ?? 50)
     const tariff = Number(state.tariffPriceUsdPerKwh ?? 0.12)
     const areaHa = Number(state.areaHa ?? 0)
+    const precipitationMm = Number(state.precipitationMm ?? 0)
+    const soilingLossPct = Number(state.soilingLossPct ?? 0)
 
     // Priority 1: Safety Stow (Storm Safeguard)
     if (windSpeedKmh >= 60) {
@@ -263,6 +276,15 @@ export class KuarahySolarDecider extends DeciderToolSelector<KuarahyAgentState, 
         choice: 'storm_safeguard',
         confidence: 0.99,
         reasoning: `Critical wind speed (${windSpeedKmh} km/h >= 60 km/h). Immediate structural defense stow required.`,
+      }
+    }
+
+    // Priority 2: Rainfall Self-Cleaning Wash (Mechatronics)
+    if (precipitationMm >= 1.5 && soilingLossPct >= 4) {
+      return {
+        choice: 'clean_panels_rainwash',
+        confidence: 0.97,
+        reasoning: `Lluvia activa (${precipitationMm.toFixed(1)} mm/h) con ${soilingLossPct.toFixed(1)}% de suciedad acumulada. Mecatrónica actuando: inclinación forzada a 65° para autolavado por escorrentía natural.`,
       }
     }
 

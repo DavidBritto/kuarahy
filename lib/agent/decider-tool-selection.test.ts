@@ -71,6 +71,24 @@ describe('KuarahySolarDecider — Domain Decision Matrix', () => {
     expect(decision.reasoning).toContain('Critical wind speed')
   })
 
+  it('triggers clean_panels_rainwash on rainfall with accumulated dust (Mechatronics Wash)', async () => {
+    const state: KuarahyAgentState = {
+      mode: 'telemetry_tracking',
+      coords: { lat: -27.47, lon: -58.83 }, // Corrientes
+      precipitationMm: 3.5, // Active rain
+      soilingLossPct: 8.2,  // Significant dust accumulation
+      windSpeedKmh: 18,
+      gti: 350,
+      elevation: 40,
+    }
+
+    const decision = await decider.evaluate(state)
+    expect(decision.choice).toBe('clean_panels_rainwash')
+    expect(decision.confidence).toBeGreaterThanOrEqual(0.95)
+    expect(decision.reasoning).toContain('Lluvia activa')
+    expect(decision.reasoning).toContain('65°')
+  })
+
   it('triggers evaluate_solar_prospect when in prospecting mode with parcel area (Priority 2)', async () => {
     const state: KuarahyAgentState = {
       mode: 'prospecting',
