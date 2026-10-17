@@ -7,6 +7,7 @@ import { getSolarHeatmapGeoJSON, estimateGtiFromCoords } from '@/lib/solar-heatm
 import type { SolarFieldTopology, SolarValuationMetrics } from '@/lib/solar-valuation'
 import type { BedrockProspectingSummaryOutput } from '@/lib/agent/bedrock-financial-model'
 import type { DeciderDecision } from '@/lib/agent/decider-tool-selection'
+import { DICTIONARY, type Locale } from '@/lib/i18n'
 
 // Set local web worker URL to prevent bundler/worker resolution failures
 if (typeof window !== 'undefined' && maplibregl.setWorkerUrl) {
@@ -26,9 +27,11 @@ interface ProspectApiResponse {
 
 interface SolarHeatmapProps {
   onProspectResolved?: (data: ProspectApiResponse) => void
+  locale?: Locale
 }
 
-export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) {
+export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: SolarHeatmapProps) {
+  const t = DICTIONARY[locale]
   const mapContainer = useRef<HTMLDivElement>(null)
   const mapRef = useRef<maplibregl.Map | null>(null)
   const markerRef = useRef<maplibregl.Marker | null>(null)
@@ -286,7 +289,7 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
         <div className="flex items-center justify-between pb-2 border-b border-zinc-800">
           <div className="flex items-center gap-1.5 font-semibold text-amber-400">
             <span className="w-2 h-2 rounded-full bg-amber-400 animate-ping" />
-            <span>Kuarahy Solar Heatmap</span>
+            <span>{t.prospecting.toolbarTitle}</span>
           </div>
           <span className="text-[10px] text-zinc-400 font-mono">MapLibre GL</span>
         </div>
@@ -294,7 +297,7 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
         {/* Area Presets */}
         <div>
           <label className="text-[11px] text-zinc-400 block mb-1 font-medium">
-            Superficie del Campo (Hectáreas):
+            {t.prospecting.areaLabel}
           </label>
           <div className="flex gap-1">
             {[5, 10, 25, 50, 100].map((ha) => (
@@ -316,31 +319,31 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
         {/* Topology Selector */}
         <div>
           <label className="text-[11px] text-zinc-400 block mb-1 font-medium">
-            Topología Tecnológica:
+            {t.prospecting.topologyLabel}
           </label>
           <div className="flex gap-1">
             {[
-              { id: 'single_axis_tracker', label: '1-Axis Tracker' },
-              { id: 'fixed_tilt', label: 'Fixed Tilt' },
-              { id: 'agrivoltaic', label: 'Agrivoltaic' },
-            ].map((t) => (
+              { id: 'single_axis_tracker', label: t.prospecting.topologies.single_axis_tracker },
+              { id: 'fixed_tilt', label: t.prospecting.topologies.fixed_tilt },
+              { id: 'agrivoltaic', label: t.prospecting.topologies.agrivoltaic },
+            ].map((topItem) => (
               <button
-                key={t.id}
-                onClick={() => handleTopologyChange(t.id as SolarFieldTopology)}
+                key={topItem.id}
+                onClick={() => handleTopologyChange(topItem.id as SolarFieldTopology)}
                 className={`px-2 py-1 rounded text-[11px] transition-all ${
-                  topology === t.id
+                  topology === topItem.id
                     ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
                     : 'bg-zinc-800/60 text-zinc-400 hover:text-zinc-200'
                 }`}
               >
-                {t.label}
+                {topItem.label}
               </button>
             ))}
           </div>
         </div>
 
         <p className="text-[10px] text-zinc-500 pt-1">
-          Hacé click o zoom sobre cualquier terreno rural para calcular el potencial solar en tiempo real.
+          {t.prospecting.helperText}
         </p>
       </div>
 
@@ -351,7 +354,7 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
           <div className="flex items-center justify-between gap-4 pb-2 border-b border-zinc-800">
             <div>
               <span className="text-[10px] font-mono text-zinc-400 uppercase tracking-wider block">
-                Coordenadas
+                {t.prospecting.hud.coordinates}
               </span>
               <span className="font-mono text-xs text-amber-300">
                 {selectedCoords?.lat.toFixed(4)}°, {selectedCoords?.lon.toFixed(4)}°
@@ -360,10 +363,10 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
             {/* Decider 2B Badge */}
             <div className="text-right">
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-medium bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                <span>⚡ Strands Decider 2B: {prospectData.decider.latencyMs}ms</span>
+                <span>{t.prospecting.hud.deciderPrefix}{prospectData.decider.latencyMs}ms</span>
               </span>
               <span className="block text-[9px] text-zinc-400">
-                Ahorro Frugal: {prospectData.meta.frugalSavingsWh.toFixed(3)} Wh
+                {t.prospecting.hud.frugalSavingsPrefix}{prospectData.meta.frugalSavingsWh.toFixed(3)} Wh
               </span>
             </div>
           </div>
@@ -371,39 +374,39 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
           {/* Quick Metrics Grid */}
           <div className="grid grid-cols-3 gap-2 my-3 text-center">
             <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-800">
-              <span className="text-[10px] text-zinc-400 block">Potencia</span>
+              <span className="text-[10px] text-zinc-400 block">{t.prospecting.hud.capacity}</span>
               <span className="text-sm font-bold text-zinc-100">
                 {prospectData.valuation.installedCapacityMwp} MWp
               </span>
             </div>
             <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-800">
-              <span className="text-[10px] text-zinc-400 block">CapEx Turnkey</span>
+              <span className="text-[10px] text-zinc-400 block">{t.prospecting.hud.turnkeyCapex}</span>
               <span className="text-sm font-bold text-amber-400">
                 ${(prospectData.valuation.turnkeyCapexUsd / 1_000_000).toFixed(2)}M
               </span>
             </div>
             <div className="p-2 bg-zinc-950/60 rounded-lg border border-zinc-800">
-              <span className="text-[10px] text-zinc-400 block">Payback</span>
+              <span className="text-[10px] text-zinc-400 block">{t.prospecting.hud.payback}</span>
               <span className="text-sm font-bold text-emerald-400">
-                {prospectData.valuation.paybackYears} años
+                {prospectData.valuation.paybackYears} {t.prospecting.hud.years}
               </span>
             </div>
           </div>
 
           {/* Value Pitch */}
           <div className="p-2.5 bg-amber-500/10 rounded-lg border border-amber-500/20 text-xs text-amber-200/90 leading-relaxed">
-            <span className="font-semibold text-amber-300">Retorno a 10 años:</span>{' '}
-            +${(prospectData.valuation.tenYearNetReturnUsd / 1_000_000).toFixed(2)}M USD netos (~
-            {prospectData.valuation.annualGenerationMwh.toLocaleString()} MWh/año).
+            <span className="font-semibold text-amber-300">{t.prospecting.hud.tenYearReturn}</span>{' '}
+            +${(prospectData.valuation.tenYearNetReturnUsd / 1_000_000).toFixed(2)}M {t.prospecting.hud.netUsd} (~
+            {prospectData.valuation.annualGenerationMwh.toLocaleString()} {t.prospecting.hud.annualGenSuffix}).
           </div>
 
           {/* Action button to open Bedrock Synthesis */}
           <div className="mt-3 flex items-center justify-between">
             <button
               onClick={() => setShowBedrockModal(true)}
-              className="w-full py-1.5 px-3 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black shadow-md transition-all flex items-center justify-center gap-1.5"
+              className="w-full py-1.5 px-3 rounded-lg text-xs font-semibold bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-black shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer"
             >
-              <span>Ver Propuesta Ejecutiva Amazon Bedrock</span>
+              <span>{t.prospecting.hud.viewProposal}</span>
               <span className="text-xs">→</span>
             </button>
           </div>
@@ -415,7 +418,7 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
         <div className="absolute inset-0 z-20 bg-black/40 backdrop-blur-xs flex items-center justify-center pointer-events-none">
           <div className="flex items-center gap-2 px-4 py-2 bg-zinc-900 border border-amber-500/40 rounded-full shadow-2xl text-xs text-amber-300">
             <span className="w-3 h-3 rounded-full border-2 border-amber-400 border-t-transparent animate-spin" />
-            <span>Consultando Strands Decider 2B & Bedrock...</span>
+            <span>{t.prospecting.loading}</span>
           </div>
         </div>
       )}
@@ -436,12 +439,12 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
                 Amazon Bedrock ({prospectData.bedrock.modelId})
               </span>
               <span className="text-xs text-zinc-400 font-mono">
-                Latencia: {prospectData.bedrock.llmLatencyMs}ms
+                {t.prospecting.modal.latency}{prospectData.bedrock.llmLatencyMs}ms
               </span>
             </div>
 
             <h3 className="text-lg font-bold text-amber-400 mt-4">
-              Dictamen de Inversión y Proyección de Retorno
+              {t.prospecting.modal.title}
             </h3>
 
             <div className="my-4 text-sm text-zinc-300 leading-relaxed whitespace-pre-line bg-zinc-950/60 p-4 rounded-xl border border-zinc-800">
@@ -449,7 +452,7 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
             </div>
 
             <h4 className="text-xs font-semibold text-zinc-400 uppercase tracking-wider mb-2">
-              Puntos Clave del Proyecto
+              {t.prospecting.modal.highlightsTitle}
             </h4>
             <ul className="space-y-1.5 mb-4 text-xs text-zinc-300">
               {prospectData.bedrock.keyHighlights.map((hl, i) => (
@@ -462,7 +465,7 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
 
             <div className="p-3 bg-zinc-950 rounded-lg border border-zinc-800 text-[11px] text-zinc-400">
               <span className="font-semibold text-zinc-300 block mb-1">
-                🏛️ Principio de Arquitectura Frugal (Werner Vogels):
+                {t.prospecting.modal.frugalTitle}
               </span>
               {prospectData.bedrock.frugalAnalysis}
             </div>
@@ -472,7 +475,7 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
                 onClick={() => setShowBedrockModal(false)}
                 className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-xs font-semibold rounded-lg text-white"
               >
-                Cerrar
+                {t.prospecting.modal.closeBtn}
               </button>
             </div>
           </div>

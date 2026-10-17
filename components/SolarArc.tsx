@@ -40,6 +40,7 @@
 
 import type { HourlyPoint, PanelConfig, SunPosition } from '@/lib/types'
 import type { KuarahyToolAction } from '@/lib/agent/decider-tool-selection'
+import type { Locale } from '@/lib/i18n'
 import {
   buildArcPath,
   CHART_COLORS,
@@ -57,6 +58,7 @@ export interface SolarArcProps {
   mode?: KuarahyToolAction
   trackerTiltDeg?: number
   isRaining?: boolean
+  locale?: Locale
 }
 
 const SUN_RADIUS = 6
@@ -87,6 +89,7 @@ export default function SolarArc({
   mode = 'adjust_solar_tracker',
   trackerTiltDeg,
   isRaining = false,
+  locale = 'en',
 }: SolarArcProps) {
   const fullPath = buildArcPath(points)
   const { traveled } = splitTraveled(points, now.ts)
@@ -131,11 +134,16 @@ export default function SolarArc({
   const normalX = pivotX - normalLen * sin
   const normalY = pivotY + normalLen * cos
 
+  const horizonText = locale === 'es' ? 'HORIZONTE 0°' : 'HORIZON 0°'
+  const sunText = locale === 'es' ? 'SOL' : 'SUN'
+  const rainwashText = locale === 'es' ? '🌧️ AUTOLAVADO 65°' : '🌧️ RAINWASH 65°'
+  const mechatronicsPrefix = locale === 'es' ? 'MECATRÓNICA' : 'MECHATRONICS'
+
   return (
     <svg
       viewBox={`0 0 ${SOLAR_ARC_VIEWBOX.width} ${SOLAR_ARC_VIEWBOX.height}`}
       role="img"
-      aria-label="Gemelo Digital del Arco Solar y Mecatrónica Kuarahy"
+      aria-label={locale === 'es' ? 'Gemelo Digital del Arco Solar y Mecatrónica Kuarahy' : 'Kuarahy Solar Arc & Mechatronics Digital Twin'}
       style={{ fontFamily: CHART_FONT_FAMILY, backgroundColor: CHART_COLORS.background }}
       className="w-full h-auto select-none"
     >
@@ -156,7 +164,7 @@ export default function SolarArc({
         stroke={CHART_COLORS.axis}
         strokeWidth={CHART_STROKE_WIDTH.hairline}
       />
-      <text x={340} y={212} fill="rgba(255,255,255,0.3)" fontSize={9}>HORIZONTE 0°</text>
+      <text x={340} y={212} fill="rgba(255,255,255,0.3)" fontSize={9}>{horizonText}</text>
 
       {/* Trayectoria completa del día, punteada */}
       {fullPath !== '' && (
@@ -199,7 +207,7 @@ export default function SolarArc({
           <circle cx={sunPoint.x} cy={sunPoint.y} r={SUN_RADIUS + 4} fill="#F0A31A" opacity={0.2} className="animate-ping" />
           <circle cx={sunPoint.x} cy={sunPoint.y} r={SUN_RADIUS} fill={CHART_COLORS.accent} />
           <text x={sunPoint.x + 9} y={sunPoint.y - 4} fill="#F0A31A" fontSize={8} fontWeight="bold">
-            SOL ({now.sun.elevation.toFixed(0)}°)
+            {sunText} ({now.sun.elevation.toFixed(0)}°)
           </text>
         </g>
       )}
@@ -258,7 +266,7 @@ export default function SolarArc({
           <line x1={pivotX - 3} y1={pivotY - 18} x2={pivotX} y2={pivotY - 8} />
           <line x1={x2 - 2} y1={y2 - 14} x2={x2 + 2} y2={y2 - 6} />
           <text x={pivotX - 45} y={145} fill="#38bdf8" fontSize={8} fontWeight="bold">
-            🌧️ AUTOLAVADO 65°
+            {rainwashText}
           </text>
         </g>
       )}
@@ -267,7 +275,7 @@ export default function SolarArc({
       <rect x={10} y={10} width={175} height={20} rx={4} fill="rgba(0,0,0,0.7)" stroke="rgba(255,255,255,0.15)" />
       <circle cx={20} cy={20} r={3} fill={mode === 'clean_panels_rainwash' ? '#38bdf8' : '#10b981'} className="animate-pulse" />
       <text x={28} y={23} fill="#e4e4e7" fontSize={8} fontWeight="bold">
-        MECATRÓNICA: {mode.toUpperCase()}
+        {mechatronicsPrefix}: {mode.toUpperCase()}
       </text>
     </svg>
   )
