@@ -8,6 +8,11 @@ import type { SolarFieldTopology, SolarValuationMetrics } from '@/lib/solar-valu
 import type { BedrockProspectingSummaryOutput } from '@/lib/agent/bedrock-financial-model'
 import type { DeciderDecision } from '@/lib/agent/decider-tool-selection'
 
+// Set local web worker URL to prevent bundler/worker resolution failures
+if (typeof window !== 'undefined' && maplibregl.setWorkerUrl) {
+  maplibregl.setWorkerUrl('/maplibre-gl-worker.mjs')
+}
+
 interface ProspectApiResponse {
   success: boolean
   decider: DeciderDecision
@@ -50,11 +55,10 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
           'osm-tiles': {
             type: 'raster',
             tiles: [
-              'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-              'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+              'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
             ],
             tileSize: 256,
-            attribution: '© OpenStreetMap contributors, © CARTO',
+            attribution: '© OpenStreetMap contributors',
           },
         },
         layers: [
@@ -73,9 +77,17 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
       minZoom: 3,
     })
 
+    mapRef.current = map
+
+    map.on('error', (err) => {
+      console.warn('MapLibre notice:', err)
+    })
+
     map.addControl(new maplibregl.NavigationControl({ showCompass: true }), 'top-right')
 
     map.on('load', () => {
+      map.resize()
+
       // 1. Add Solar Heatmap Source
       const heatmapData = getSolarHeatmapGeoJSON()
       map.addSource('solar-potential', {
@@ -150,9 +162,19 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
       inspectLocation(lat, lng, areaHa, topology)
     })
 
-    mapRef.current = map
+    const handleResize = () => {
+      if (mapRef.current) mapRef.current.resize()
+    }
+    window.addEventListener('resize', handleResize)
+    const t1 = setTimeout(handleResize, 150)
+    const t2 = setTimeout(handleResize, 600)
+    const t3 = setTimeout(handleResize, 1500)
 
     return () => {
+      window.removeEventListener('resize', handleResize)
+      clearTimeout(t1)
+      clearTimeout(t2)
+      clearTimeout(t3)
       map.remove()
       mapRef.current = null
     }
@@ -253,7 +275,11 @@ export default function SolarHeatmap({ onProspectResolved }: SolarHeatmapProps) 
   return (
     <div className="relative w-full h-[650px] rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 shadow-2xl">
       {/* Map Canvas */}
-      <div ref={mapContainer} className="w-full h-full" />
+      <div
+        ref={mapContainer}
+        style={{ width: '100%', height: '100%', minHeight: '650px', position: 'relative' }}
+        className="w-full h-full"
+      />
 
       {/* Floating Control Toolbar (Top Left) */}
       <div className="absolute top-4 left-4 z-10 flex flex-col gap-2 p-3 bg-zinc-900/90 backdrop-blur-md border border-zinc-700/60 rounded-xl text-xs text-zinc-200 shadow-xl max-w-sm">
