@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   DeciderToolSelector,
   KuarahySolarDecider,
-  FRUGAL_METRICS,
   type KuarahyAgentState,
 } from './decider-tool-selection'
 
@@ -17,7 +16,7 @@ describe('AWS Strands Decider 2B — #tool-selection Pattern', () => {
     }).toThrow('DeciderToolSelector requires at least one tool option.')
   })
 
-  it('evaluates generic options and outputs calibrated confidence and frugal metrics', async () => {
+  it('uses an explicitly labeled local fallback when no endpoint is configured', async () => {
     const selector = new DeciderToolSelector({
       question: 'Test question',
       options: [
@@ -31,9 +30,74 @@ describe('AWS Strands Decider 2B — #tool-selection Pattern', () => {
 
     expect(result.choice).toBe('tool_a')
     expect(result.confidence).toBeGreaterThan(0.5)
-    expect(result.whEstimated).toBe(FRUGAL_METRICS.DECIDER_2B_WH_PER_CALL)
-    expect(result.engine).toBe('strands-decider-2b')
-    expect(result.latencyMs).toBeLessThan(100) // Fast deterministic execution
+    expect(result.whEstimated).toBeNull()
+    expect(result.engine).toBe('heuristic-fallback')
+    expect(result.fallbackReason).toBe('endpoint_not_configured')
+    expect(result.latencyMs).toBeGreaterThanOrEqual(0)
+  })
+
+  it('sends the upstream typed-choice request and trusts only a valid attributed response', async () => {
+    let sentBody: Record<string, unknown> | undefined
+    const selector = new DeciderToolSelector({
+      question: 'Select the safest action.',
+      model: 'strands-decider-2b',
+      endpointUrl: 'https://decider.invalid/v1/systemone',
+      options: [
+        { id: 'tool_a', label: 'A', description: 'First option', whenToUse: 'When A' },
+        { id: 'tool_b', label: 'B', description: 'Second option', whenToUse: 'When B' },
+      ],
+      extractState: (state: { value: number }) => ({ value: state.value }),
+      fetcher: async (_input, init) => {
+        sentBody = JSON.parse(String(init?.body))
+        return Response.json({
+          model: 'strands-decider-2b',
+          answers: { tool_selection: { type: 'choice', choice: 'tool_b', probabilities: { tool_a: 0.1, tool_b: 0.9 }, confidence: 0.9 } },
+          usage: {},
+          latency_ms: 12,
+        })
+      },
+    })
+
+    const result = await selector.evaluate({ value: 42 })
+    expect(sentBody).toEqual({
+      state: { value: 42 },
+      model: 'strands-decider-2b',
+      questions: { tool_selection: { type: 'choice', instructions: 'Select the safest action.', criteria: { tool_a: 'First option', tool_b: 'Second option' } } },
+    })
+    expect(result).toMatchObject({ choice: 'tool_b', confidence: 0.9, engine: 'strands-decider-2b', model: 'strands-decider-2b', whEstimated: null })
+    expect(result.reasoning).toContain('strands-decider-2b')
+  })
+
+  it.each([
+    ['HTTP failure', async () => new Response('unavailable', { status: 503 }), 'request_failed'],
+    ['malformed response', async () => Response.json({ model: 'strands-decider-2b' }), 'invalid_response'],
+    ['unknown choice', async () => Response.json({ model: 'strands-decider-2b', answers: { tool_selection: { type: 'choice', choice: 'outside_options', confidence: 0.9 } } }), 'invalid_response'],
+    ['incorrect model attribution', async () => Response.json({ model: 'some-other-model', answers: { tool_selection: { type: 'choice', choice: 'tool_a', confidence: 0.9 } } }), 'invalid_response'],
+    ['invalid confidence', async () => Response.json({ model: 'strands-decider-2b', answers: { tool_selection: { type: 'choice', choice: 'tool_a', confidence: Infinity } } }), 'invalid_response'],
+  ] as const)('falls back on %s', async (_label, responder, fallbackReason) => {
+    const selector = new DeciderToolSelector({
+      question: 'Choose', endpointUrl: 'https://decider.invalid/v1/systemone',
+      options: [{ id: 'tool_a', label: 'A', description: 'A', whenToUse: 'Always' }],
+      extractState: () => ({}), fetcher: async () => responder(),
+    })
+    const result = await selector.evaluate({})
+    expect(result.engine).toBe('heuristic-fallback')
+    expect(result.fallbackReason).toBe(fallbackReason)
+    expect(result.whEstimated).toBeNull()
+  })
+
+  it('falls back when the configured request times out', async () => {
+    const selector = new DeciderToolSelector({
+      question: 'Choose', endpointUrl: 'https://decider.invalid/v1/systemone', timeoutMs: 5,
+      options: [{ id: 'tool_a', label: 'A', description: 'A', whenToUse: 'Always' }],
+      extractState: () => ({}),
+      fetcher: (_input, init) => new Promise((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => reject(new Error('request timed out')))
+      }),
+    })
+    const result = await selector.evaluate({})
+    expect(result.engine).toBe('heuristic-fallback')
+    expect(result.fallbackReason).toBe('request_failed')
   })
 
   it('exports an AWS Strands compatible intervention handler', async () => {
@@ -49,7 +113,7 @@ describe('AWS Strands Decider 2B — #tool-selection Pattern', () => {
     const intervention = await handler.handle({ state: {} })
     expect(intervention.intervene).toBe(true)
     expect(intervention.selectedTool).toBe('action_1')
-    expect(intervention.frugalSavingsWh).toBeGreaterThan(0.2) // Saved > 0.2 Wh vs 70B LLM
+    expect(intervention.frugalSavingsWh).toBeNull()
   })
 })
 

@@ -4,14 +4,14 @@
  * Hackathon tags: #strands-decider-2b #tool-selection
  * Architecture Thesis: Built under Werner Vogels' "The Frugal Architect" principles.
  * 
- * Strands Decider 2B is a 2B-parameter small decision model that evaluates a typed state
- * and question, returning a categorical choice and calibrated confidence in ~115ms.
+ * The configured Strands Decider endpoint evaluates a typed state and question;
+ * without a valid response, this module labels its local heuristic fallback explicitly.
  * 
  * This module exports:
  * 1. A generic, reusable `DeciderToolSelector<TState, TToolName>` class usable in any agent.
  * 2. An AWS Strands-compatible `InterventionHandler` adapter.
  * 3. Specific pre-configured tools and evaluation logic for Kuarahy Solar AX.
- * 4. Frugal energy & latency measurement utilities (comparing Decider 2B vs Frontier LLMs).
+ * 4. Local solar-domain heuristic evaluation for offline use.
  */
 
 export interface DeciderToolOption<TToolName extends string = string> {
@@ -24,11 +24,13 @@ export interface DeciderToolOption<TToolName extends string = string> {
 
 export interface DeciderDecision<TToolName extends string = string> {
   choice: TToolName
-  confidence: number // 0.0 to 1.0 calibrated confidence
+  confidence: number // Remote confidence or a local heuristic score, in the 0.0–1.0 range.
   latencyMs: number
   engine: 'strands-decider-2b' | 'heuristic-fallback' | 'bedrock-llm'
-  whEstimated: number // Estimated Watt-hours consumed
+  model: string | null
+  whEstimated: number | null // No energy estimate is available for this invocation.
   reasoning: string
+  fallbackReason?: 'endpoint_not_configured' | 'request_failed' | 'invalid_response'
   timestamp: number
 }
 
@@ -37,22 +39,11 @@ export interface DeciderToolSelectionConfig<TState, TToolName extends string> {
   options: DeciderToolOption<TToolName>[]
   extractState: (state: TState) => Record<string, unknown>
   endpointUrl?: string
+  model?: string
+  timeoutMs?: number
+  fetcher?: typeof fetch
   confidenceThreshold?: number // Default: 0.65
 }
-
-/**
- * Energy & cost constants based on Werner Vogels' Frugal Architect laws:
- * - Small 2B model on edge/Graviton: ~0.00008 Wh per inference, ~115ms latency.
- * - Heavy 70B+ cloud LLM: ~0.24 Wh per inference (Google/arXiv: 2508.15734), ~1800ms latency.
- */
-export const FRUGAL_METRICS = {
-  DECIDER_2B_WH_PER_CALL: 0.00008,
-  DECIDER_2B_AVG_LATENCY_MS: 115,
-  LLM_70B_WH_PER_CALL: 0.24,
-  LLM_70B_AVG_LATENCY_MS: 1800,
-  DECIDER_2B_COST_PER_CALL_USD: 0.00001,
-  LLM_70B_COST_PER_CALL_USD: 0.015,
-} as const
 
 /**
  * Reusable Decider 2B Tool Selector
@@ -71,55 +62,72 @@ export class DeciderToolSelector<TState, TToolName extends string> {
   }
 
   /**
-   * Evaluates the given state and selects the optimal tool.
-   * Uses real AWS Strands Decider 2B endpoint if configured, otherwise executes
-   * calibrated deterministic heuristic emulation for testing and offline edge devices.
+   * Evaluates the state using the typed Strands Decider HTTP API when configured.
+   * If unavailable or invalid, returns a clearly identified local heuristic result.
    */
   async evaluate(state: TState): Promise<DeciderDecision<TToolName>> {
     const startTime = performance.now()
     const serializedState = this.config.extractState(state)
 
+    let fallbackReason: DeciderDecision<TToolName>['fallbackReason'] = 'endpoint_not_configured'
     if (this.config.endpointUrl) {
       try {
-        const response = await fetch(this.config.endpointUrl, {
+        const response = await (this.config.fetcher ?? fetch)(this.config.endpointUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          signal: AbortSignal.timeout(this.config.timeoutMs ?? 1500),
           body: JSON.stringify({
-            question: this.config.question,
-            options: this.config.options.map(o => ({ id: o.id, desc: o.description })),
             state: serializedState,
+            model: this.config.model ?? 'strands-decider-2b',
+            questions: {
+              tool_selection: {
+                type: 'choice',
+                instructions: this.config.question,
+                criteria: Object.fromEntries(this.config.options.map(option => [option.id, option.description])),
+              },
+            },
           }),
         })
 
-        if (response.ok) {
-          const data = await response.json()
-          const latencyMs = Math.round(performance.now() - startTime)
-          return {
-            choice: data.choice,
-            confidence: Number(data.confidence ?? 0.95),
-            latencyMs,
-            engine: 'strands-decider-2b',
-            whEstimated: FRUGAL_METRICS.DECIDER_2B_WH_PER_CALL,
-            reasoning: data.reasoning ?? `Strands Decider 2B selected ${data.choice}`,
-            timestamp: Date.now(),
+        if (!response.ok) {
+          fallbackReason = 'request_failed'
+        } else {
+          const data: unknown = await response.json()
+          const remote = parseDeciderResponse<TToolName>(data, this.config.options.map(option => option.id), this.config.model ?? 'strands-decider-2b')
+          if (!remote) {
+            fallbackReason = 'invalid_response'
+          } else {
+            const latencyMs = Math.round(performance.now() - startTime)
+            return {
+              choice: remote.choice,
+              confidence: remote.confidence,
+              latencyMs,
+              engine: 'strands-decider-2b',
+              model: remote.model,
+              whEstimated: null,
+              reasoning: `Strands Decider (${remote.model}) selected ${remote.choice}`,
+              timestamp: Date.now(),
+            }
           }
         }
       } catch {
-        // Fall back gracefully to deterministic logic if network fails (edge resiliency)
+        fallbackReason = 'request_failed'
       }
     }
 
-    // Calibrated heuristic / edge-simulation decision
+    // Local heuristic decision; do not attribute it to the remote model.
     const fallback = this.heuristicEvaluate(serializedState)
-    const latencyMs = Math.max(12, Math.round(performance.now() - startTime))
+    const latencyMs = Math.round(performance.now() - startTime)
 
     return {
       choice: fallback.choice,
       confidence: fallback.confidence,
       latencyMs,
-      engine: 'strands-decider-2b',
-      whEstimated: FRUGAL_METRICS.DECIDER_2B_WH_PER_CALL,
+      engine: 'heuristic-fallback',
+      model: null,
+      whEstimated: null,
       reasoning: fallback.reasoning,
+      fallbackReason,
       timestamp: Date.now(),
     }
   }
@@ -127,16 +135,17 @@ export class DeciderToolSelector<TState, TToolName extends string> {
   /**
    * Deterministic edge evaluator mimicking Decider 2B's scoring matrix.
    */
-  protected heuristicEvaluate(state: Record<string, unknown>): {
+  protected heuristicEvaluate(_state: Record<string, unknown>): {
     choice: TToolName
     confidence: number
     reasoning: string
   } {
+    void _state
     // Default fallback to first option
     return {
       choice: this.config.options[0].id,
       confidence: 0.85,
-      reasoning: `Decider 2B mapped state parameters to primary tool: ${this.config.options[0].id}`,
+      reasoning: `Local heuristic selected the primary tool: ${this.config.options[0].id}`,
     }
   }
 
@@ -156,11 +165,30 @@ export class DeciderToolSelector<TState, TToolName extends string> {
           confidence: decision.confidence,
           latencyMs: decision.latencyMs,
           engine: decision.engine,
-          frugalSavingsWh: FRUGAL_METRICS.LLM_70B_WH_PER_CALL - decision.whEstimated,
+          frugalSavingsWh: null,
         }
       },
     }
   }
+}
+
+function parseDeciderResponse<TToolName extends string>(
+  value: unknown,
+  allowedChoices: readonly TToolName[],
+  requestedModel: string,
+): { choice: TToolName; confidence: number; model: string } | null {
+  if (!value || typeof value !== 'object') return null
+  const response = value as Record<string, unknown>
+  if (typeof response.model !== 'string' || response.model.trim() !== requestedModel) return null
+  if (!response.answers || typeof response.answers !== 'object') return null
+  const answers = response.answers as Record<string, unknown>
+  if (!answers.tool_selection || typeof answers.tool_selection !== 'object') return null
+  const answer = answers.tool_selection as Record<string, unknown>
+  const confidence = answer.confidence
+  if (answer.type !== 'choice' || typeof answer.choice !== 'string' ||
+      !allowedChoices.includes(answer.choice as TToolName) ||
+      typeof confidence !== 'number' || !Number.isFinite(confidence) || confidence < 0 || confidence > 1) return null
+  return { choice: answer.choice as TToolName, confidence, model: response.model }
 }
 
 // ============================================================================
@@ -230,11 +258,12 @@ export const KUARAHY_DECIDER_TOOLS: DeciderToolOption<KuarahyToolAction>[] = [
 ]
 
 export class KuarahySolarDecider extends DeciderToolSelector<KuarahyAgentState, KuarahyToolAction> {
-  constructor(endpointUrl?: string) {
+  constructor(endpointUrl?: string, model?: string) {
     super({
       question: 'Given the real-time solar telemetry and operating mode, select the optimal actuation or assessment tool.',
       options: KUARAHY_DECIDER_TOOLS,
       endpointUrl,
+      model,
       extractState: (state: KuarahyAgentState) => ({
         mode: state.mode,
         lat: state.coords.lat,

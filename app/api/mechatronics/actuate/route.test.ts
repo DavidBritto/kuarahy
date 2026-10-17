@@ -1,8 +1,11 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { POST } from './route'
 import { NextRequest } from 'next/server'
 
 describe('POST /api/mechatronics/actuate', () => {
+  beforeEach(() => vi.stubEnv('STRANDS_DECIDER_ENDPOINT', ''))
+  afterEach(() => vi.unstubAllEnvs())
+
   it('triggers active tracking actuation with +24.8% power gain over fixed panel', async () => {
     const req = new NextRequest('http://localhost:3000/api/mechatronics/actuate', {
       method: 'POST',

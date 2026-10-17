@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { KuarahySolarDecider, type KuarahyAgentState, type KuarahyToolAction } from '@/lib/agent/decider-tool-selection'
+import { KuarahySolarDecider, type KuarahyAgentState } from '@/lib/agent/decider-tool-selection'
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,7 +14,7 @@ export async function POST(req: NextRequest) {
     const lat = Number(body.lat ?? -27.47)
     const lon = Number(body.lon ?? -58.83)
 
-    const decider = new KuarahySolarDecider()
+    const decider = new KuarahySolarDecider(process.env.STRANDS_DECIDER_ENDPOINT, process.env.STRANDS_DECIDER_MODEL)
     const state: KuarahyAgentState = {
       mode: 'telemetry_tracking',
       coords: { lat, lon },
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       },
       meta: {
         latencyMs: decision.latencyMs,
-        frugalSavingsWh: 0.24 - decision.whEstimated,
+        frugalSavingsWh: null,
         timestamp: Date.now(),
       },
     })

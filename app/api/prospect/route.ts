@@ -15,8 +15,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'El área debe ser mayor a 0 hectáreas.' }, { status: 400 })
     }
 
-    // Step 1: Strands Decider 2B Tool Selection (<115ms)
-    const decider = new KuarahySolarDecider()
+    // Step 1: configured Strands Decider or explicitly labeled local fallback
+    const decider = new KuarahySolarDecider(process.env.STRANDS_DECIDER_ENDPOINT, process.env.STRANDS_DECIDER_MODEL)
     const agentState: KuarahyAgentState = {
       mode: 'prospecting',
       coords: { lat, lon },
@@ -50,8 +50,7 @@ export async function POST(req: NextRequest) {
       bedrock: bedrockReport,
       meta: {
         timestamp: Date.now(),
-        frugalSavingsWh: 0.24 - deciderDecision.whEstimated,
-        frugalLatencySavingsMs: 1800 - deciderDecision.latencyMs,
+        frugalSavingsWh: null,
       },
     })
   } catch (err: unknown) {
