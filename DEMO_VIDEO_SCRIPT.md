@@ -1,145 +1,74 @@
-# Kuarahy AX — 3-Minute Hackathon Demo Video Script
+# Kuarahy AX — Demo recording outline
 
-> **Hackathon:** AWS Agent Experience Hackathon: Strands Decider  
-> **Duration Target:** 2 minutes 50 seconds (< 3:00 hard limit)  
-> **Resolution:** 1080p (1920x1080) at 60 FPS  
-> **App URL:** `http://localhost:3000` (Language toggle set to `EN`)  
-> **Repository:** [https://github.com/DavidBritto/kuarahy](https://github.com/DavidBritto/kuarahy)  
-> **Required Tags:** `#strands-decider-2b` · `#tool-selection`  
+This script describes the current local demo. Decision and summary fallbacks work without configured Decider or Bedrock integrations. Map tiles are requested from OpenStreetMap, and the app build fetches Google Fonts through `next/font`, so those resources require network access. Contract and model-name validation cannot prove a configured endpoint's identity or actual binary/checkpoint execution; verify those with the endpoint operator before claiming real Strands Decider inference. This script does not claim a live Decider or Bedrock invocation, physical actuation, measured latency percentiles, or measured energy savings. If you record with remote integrations enabled, show their provenance labels and retain the logs/configuration needed to substantiate that specific run.
 
----
+## Before recording
 
-## Pre-Recording Checklist
+1. Start the app with `npm run dev` and open `http://localhost:3000`.
+2. Leave integrations disabled unless you have independently configured and authorized them. The interface labels sample values, local heuristic decisions, and local Bedrock-summary fallback separately. The UI's endpoint result label is not independent verification of the endpoint's identity or model execution.
+3. Use the `[EN | ES]` control to demonstrate both locales.
+4. Describe this as a simulation: no sensors, tracker motors, or field telemetry are connected.
 
-1. **Browser Setup:**
-   * Open Chrome/Brave in Fullscreen (`F11`).
-   * Zoom level: 100% or 110% (so typography is razor-sharp).
-   * Ensure language toggle is on `[EN]` (English default).
-   * Close devtools and hide bookmarks bar (`Ctrl+Shift+B`).
-2. **Audio Setup:**
-   * Microphone input level: -6dB peak, crisp voiceover with noise suppression.
-3. **Recording Software:**
-   * OBS Studio / Loom set to 1920x1080 @ 60fps.
-   * Enable mouse click visual halos/highlights.
+## English voiceover outline
 
----
+### 0:00–0:30 — Scenario and simulation
 
-## Video Timeline & Storyboard (180 Seconds)
+Show the solar telemetry controls and presets.
 
-```
-0:00 ─── 0:25 │ Hook & The Frugal Problem (30% cosine loss + 15% soiling)
-0:25 ─── 1:15 │ HERO FEATURE: Digital Twin, Mechatronic Tracking & 65° Rainwash
-1:15 ─── 1:50 │ THE REUSABLE ASSET: #tool-selection & Werner Vogels Benchmark
-1:50 ─── 2:30 │ SECONDARY FEATURE: MapLibre GL Heatmap & Amazon Bedrock Synthesis
-2:30 ─── 2:50 │ Conclusion & Impact: Edge SLM + Generative LLM
-```
+> “Kuarahy AX is an interactive solar-operations demo. It simulates solar conditions and equipment behavior so we can inspect a set of decision scenarios. It is not connected to a physical tracker or live sensor data.”
 
----
+### 0:30–1:15 — Decision provenance
 
-## Detailed Scene-by-Scene Script
+Change a scenario and point to the decision card. Explain the visible source label: sample UI values before the first response, a configured endpoint response only after contract and model-name checks pass, or a local heuristic fallback otherwise. These checks do not independently establish endpoint identity or actual model execution. If a fallback appears, read its reason. Request duration is the elapsed time for that request, not a P95 benchmark.
 
-### Scene 1: The Problem & The Frugal Architect Thesis (0:00 – 0:25)
+> “The app can send the typed choice request to an endpoint configured to serve Strands Decider. Here, the UI identifies whether the response passed the expected contract and model-name checks or came from the local fallback. Those checks do not prove the endpoint's identity or model execution. The local fallback supports a demo without configured model integrations, but it is not model inference.”
 
-* **Visual on Screen:**
-  * Open directly on the Kuarahy AX dashboard (`http://localhost:3000`).
-  * Hover gently over the banner: *"Hero Feature: Energy Gain & Autonomous Mechatronic Rainwash"*.
-  * Mouse points to the KPI metric cards showing `+24.8% Mechatronic Advantage` and `14 ms Decider 2B Latency`.
-* **Voiceover (English):**
-  > *"Solar photovoltaic energy powers our clean future—yet static solar panels suffer from a massive double penalty. They lose up to 30% of energy because they don't track the sun, and another 15% to dust and dirt, forcing solar farms to spend thousands of dollars on manual wash crews with water trucks.*
-  > *Why not use AI? Because in high-speed mechatronics, a motor gearbox cannot wait 2 seconds for a cloud LLM to respond, nor burn 0.24 Watt-hours per decision. Following Werner Vogels' 'The Frugal Architect', we built Kuarahy AX—using AWS Strands Decider 2B right at the edge."*
+### 1:15–1:55 — Reusable pattern and limits
 
----
+Show `lib/agent/decider-tool-selection.ts` and `REUSABLE_DECIDER_PATTERN.md`. Point out registered options, typed request construction, response validation, and fallback provenance.
 
-### Scene 2: Hero Feature Live Demo — Digital Twin & Rainwash (0:25 – 1:15)
+> “The reusable piece is a small TypeScript selector with an explicit contract and fallback behavior. This code reports no energy estimate, and we have not run a comparative latency or energy benchmark, so the interface avoids presenting those as measured results.”
 
-* **Visual on Screen:**
-  * **Action 1 (0:25):** Focus on the Digital Twin (`SolarArc.tsx`). Drag the Solar Hour slider from `07:00` to `12:00` to `16:00`.
-  * Point cursor to the rotating photovoltaic panel and the normal ray vector tracking the sun in real time.
-  * Point cursor to the top right badge: `Tilt Motor: 28°`, `ACTIVE_TRACKING`, and `14 ms` P95 latency.
-  * **Action 2 (0:45):** Click the preset button: `🌧️ Self-Cleaning` (`rainwashPreset`).
-  * Watch the Digital Twin immediately tilt to a steep **65°**, blue rain droplets stream across the SVG canvas, and the callout box illuminate:
-    *"Active Rainwash Mode: 65° tilt leverages natural rainfall to wash away 8.5% soiling. Projected savings of $1,850 USD/year in eliminated manual wash crews."*
-  * **Action 3 (1:00):** Click the preset button: `🌪️ Wind Gust` (`stormDefensePreset`).
-  * Watch the panel immediately snap to flat **0° stow defense** in 14ms with the red alert badge.
-* **Voiceover (English):**
-  > *"Here is Kuarahy AX in action. In our Digital Twin, AWS Strands Decider 2B evaluates solar elevation and irradiance in under 15 milliseconds, continuously commanding motor micro-adjustments for a +24.8% net generation surplus.*
-  > *Now watch what happens when precipitation is detected. With one click, Decider 2B evaluates rainfall and panel dust, immediately commanding a steep 65-degree tilt. Natural rainwater washes away accumulated dirt at high velocity—saving $1,850 dollars a year in manual cleaning labor!*
-  > *And when 74 km/h gale winds hit? The system snaps the panel flat to 0 degrees in 14 milliseconds, protecting millions in capital equipment."*
+### 1:55–2:30 — Parcel valuation and Bedrock provenance
 
----
+Open the prospecting map, select a parcel, and open the generated summary. Map tiles require network access. The locally calculated valuation is an estimate. The summary panel identifies either a configured Amazon Bedrock response and model, or a local simulated summary with its fallback reason.
 
-### Scene 3: The Reusable Asset — `#tool-selection` with Strands Decider 2B (1:15 – 1:50)
+> “Parcel capacity and financial projections are illustrative outputs from the local valuation model, not verified project economics. Bedrock is optional: the summary itself tells us whether the configured model returned it or whether the app used its local simulation.”
 
-* **Visual on Screen:**
-  * Scroll down slightly to show the **Frugal Architecture Benchmark Table**.
-  * Highlight the numbers:
-    * Decision Latency: `14 ms` vs. `~1,850 ms` (16x faster).
-    * Energy Consumption: `~0.00008 Wh` vs. `~0.24 Wh` (3,000x more energy-efficient).
-  * Briefly tab over to VS Code or GitHub showing `lib/agent/decider-tool-selection.ts` and `REUSABLE_DECIDER_PATTERN.md`.
-  * Highlight the class `DeciderToolSelector` and method `asStrandsInterventionHandler()`.
-* **Voiceover (English):**
-  > *"To empower the entire community, we packaged this decision engine into an open-source, reusable asset tagged with #tool-selection.*
-  > *Our `DeciderToolSelector` provides strongly-typed state extraction and a drop-in adapter for AWS Strands agents. Look at our benchmark: Decider 2B runs 16 times faster and is 3,000 times more energy-efficient than frontier 70B cloud models. It delivers deterministic physical safety with near-zero power draw."*
+### 2:30–2:50 — Close
 
----
+Switch to Spanish and back to English. Avoid quantitative performance or savings claims unless separate measurements support them.
 
-### Scene 4: Secondary Feature & Generative Tier — MapLibre GL & Bedrock (1:50 – 2:30)
+> “Kuarahy AX keeps remote inference integrations optional and makes the local fallback visible. The source and documentation explain how to configure each integration and what this demo does—and does not—measure.”
 
-* **Visual on Screen:**
-  * Click on the second tab: `🗺️ Prospecting Heatmap`.
-  * The GPU-accelerated **MapLibre GL** map appears with the solar irradiance layer.
-  * Click on a rural land parcel in Córdoba / Corrientes.
-  * In the floating toolbar, switch the area buttons: `10 ha` ➔ `50 ha` ➔ `100 ha`.
-  * Show the floating HUD card updating live: `Installed Capacity: 50.0 MWp`, `Turnkey CapEx: $42.50M`, `10-Year Return: +$78.20M USD`.
-  * Click the glowing button: `View Amazon Bedrock Executive Proposal →`.
-  * The modal opens displaying the Claude 3.5 Sonnet investment memorandum, key highlights, and Werner Vogels frugality breakdown.
-* **Voiceover (English):**
-  > *"For scaling solar farms, Kuarahy AX includes a secondary feature: GPU-accelerated prospecting with MapLibre GL. Developers can select rural parcels, toggle topologies from single-axis trackers to agrivoltaics, and simulate 10-year financial returns.*
-  > *When executive committees need a formal prospectus, we invoke Amazon Bedrock with Claude 3.5 Sonnet on-demand. This preserves the core Frugal Architect rule: Small Language Models handle high-frequency edge automation; Generative Foundation Models handle high-level business intelligence."*
+## Guion alternativo en español
 
----
+### 0:00–0:30 — Escenario y simulación
 
-### Scene 5: Conclusion & Bilingual Showcase (2:30 – 2:50)
+Muestre los controles y presets de telemetría solar.
 
-* **Visual on Screen:**
-  * Close the modal and return to the main dashboard.
-  * Click the `[EN | ES]` language toggle button in the header—watch the entire interface translate seamlessly to Spanish and back to English.
-  * Hover over the GitHub repo link and final rubric tags.
-* **Voiceover (English):**
-  > *"With full bilingual internationalization, 24 out of 24 unit tests passing, and a production-grade digital twin, Kuarahy AX bridges physical robotics and agentic intelligence.*
-  > *Check out our open-source codebase on GitHub tagged with #strands-decider-2b and #tool-selection.*
-  > *Thank you for watching!"*
+> “Kuarahy AX es una demo interactiva de operación solar. Simula condiciones solares y comportamiento del equipo para explorar escenarios de decisión. No está conectada a seguidores físicos ni a sensores en vivo.”
 
----
+### 0:30–1:15 — Procedencia de la decisión
 
-## Script Translation: Spanish Voiceover Alternative (Guión en Español)
+Cambie un escenario y señale la tarjeta de decisión. Explique las etiquetas visibles: valores de muestra antes de la primera respuesta, una respuesta aceptada del endpoint configurado solo después de validar el contrato y el nombre del modelo, o un fallback heurístico local. Esas comprobaciones no verifican por sí solas la identidad del endpoint ni el modelo ejecutado. Si aparece un fallback, lea el motivo. La duración corresponde a esa solicitud, no a un benchmark P95.
 
-Si prefieres grabar la locución en español o incluir subtítulos sincronizados:
+> “La aplicación puede enviar una solicitud de elección tipada a un endpoint configurado para ofrecer Strands Decider. La interfaz indica si la respuesta superó las validaciones de contrato y nombre del modelo o si se usó el fallback local. Esas comprobaciones no verifican por sí solas la identidad del endpoint ni el modelo ejecutado. El fallback permite una demo sin integraciones de inferencia configuradas, pero no es inferencia del modelo.”
 
-> **(0:00 – 0:25) Introducción:**  
-> *"La energía solar fotovoltaica lidera la transición limpia, pero los paneles fijos sufren dos grandes penalidades: pierden hasta 30% de energía por no seguir al sol, y hasta 15% adicional por polvo acumulado, obligando a contratar cuadrillas de lavado manual con camiones cisterna.*  
-> *¿Por qué no usar IA? Porque en mecatrónica industrial un motor no puede esperar 2 segundos a que responda un LLM en la nube ni quemar 0.24 Wh por ciclo de control. Siguiendo la filosofía 'The Frugal Architect' de Werner Vogels, creamos Kuarahy AX utilizando AWS Strands Decider 2B en el borde."*
+### 1:15–1:55 — Patrón reutilizable y límites
 
-> **(0:25 – 1:15) Demostración del Gemelo Digital:**  
-> *"En nuestro gemelo digital, Strands Decider 2B evalúa elevación solar e irradiancia en menos de 15 milisegundos, comandando microajustes que generan +24.8% de energía neta excedente.*  
-> *Miren lo que ocurre ante lluvia: Decider 2B detecta precipitación y suciedad acumulada, inclinando automáticamente los paneles a 65 grados. El agua de lluvia natural limpia el vidrio a alta velocidad, ahorrando $1.850 dólares al año en cuadrillas manuales.*  
-> *¿Y ante vientos de 74 km/h? El sistema repliega los paneles a 0 grados en 14 milisegundos para evitar daños estructurales."*
+Muestre `lib/agent/decider-tool-selection.ts` y `REUSABLE_DECIDER_PATTERN.md`. Señale las opciones registradas, la solicitud tipada, la validación de la respuesta y la procedencia del fallback.
 
-> **(1:15 – 1:50) Activo Reutilizable:**  
-> *"Empaquetamos este motor de decisión como un activo reutilizable bajo el tag #tool-selection. Nuestro DeciderToolSelector se integra sin fricción en agentes de AWS Strands. En nuestro benchmark, Decider 2B es 16 veces más rápido y 3.000 veces más eficiente energéticamente que los modelos de 70 mil millones de parámetros."*
+> “El patrón reutilizable es un selector TypeScript pequeño, con contrato y fallback explícitos. El código no informa una estimación de energía y no hicimos un benchmark comparativo de latencia o energía; por eso la interfaz no presenta esos resultados como mediciones.”
 
-> **(1:50 – 2:30) Prospección con MapLibre GL y Bedrock:**  
-> *"Como feature secundaria, integramos prospección territorial con MapLibre GL sobre GPU. Calculamos potencia instalable, CapEx y retorno a 10 años en cualquier terreno rural.*  
-> *Y cuando se requiere una propuesta para comités de inversión, invocamos Amazon Bedrock con Claude 3.5 Sonnet bajo demanda: SLMs para control físico de alta frecuencia; LLMs para síntesis ejecutiva de negocio."*
+### 1:55–2:30 — Valuación y procedencia de Bedrock
 
-> **(2:30 – 2:50) Cierre:**  
-> *"Con soporte bilingüe instantáneo y 24 tests unitarios aprobados, Kuarahy AX une robótica física e inteligencia agéntica. Código libre en GitHub bajo los tags #strands-decider-2b y #tool-selection. ¡Muchas gracias!"*
+Abra el mapa, seleccione un terreno y muestre el resumen. Los mosaicos del mapa requieren conexión a internet. La valuación local es una estimación. El panel indica si el resumen vino de Amazon Bedrock con el modelo configurado o si es una simulación local, junto con el motivo del fallback.
 
----
+> “La capacidad y las proyecciones financieras son resultados ilustrativos del modelo de valuación local, no economía de proyecto verificada. Bedrock es opcional: el propio resumen indica si lo generó el modelo configurado o la simulación local.”
 
-## Recording Tips for Maximum Scoring
+### 2:30–2:50 — Cierre
 
-1. **Keep the pace brisk:** Do not pause for more than 1 second between sentences.
-2. **Smooth Cursor Motion:** Move the mouse deliberately; avoid shaking or clicking erratically.
-3. **Show the 14ms Badge:** When triggering presets, let the cursor hover over `14 ms` so the judges clearly see the ultra-low latency.
-4. **Volume Normalization:** Normalize the final audio to -14 LUFS (YouTube/Loom standard).
+Cambie el idioma a inglés y vuelva al español. Evite afirmaciones cuantitativas de rendimiento o ahorro salvo que haya mediciones independientes que las respalden.
+
+> “Kuarahy AX mantiene opcionales las integraciones de inferencia remota y hace visible el fallback local. El código y la documentación explican cómo configurar cada integración y qué mide —y qué no mide— esta demo.”
