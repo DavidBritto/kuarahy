@@ -1,36 +1,48 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Kuarahy AX
 
-## Getting Started
+Kuarahy AX is a bilingual Next.js demo of solar telemetry, tool selection, parcel valuation, and executive-summary generation. Solar telemetry, equipment behavior, and financial results are simulated locally. A configured Strands Decider endpoint and Amazon Bedrock are optional; the app can run its local decision and summary fallbacks without either integration.
 
-First, run the development server:
+## Run the local demo
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open <http://localhost:3000>. The UI starts with sample values and reports the provenance of each completed decision and summary. No physical solar equipment is controlled. Map tiles are requested from OpenStreetMap, and the app build fetches Google Fonts through `next/font`; those resources require network access. Request duration is per request, not a P95 benchmark; this app does not measure inference energy use or compare model efficiency.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Optional server-side integrations
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Create an ignored local `.env.local` in the project root. Never put credentials in this file or commit it. Next.js loads these values on the server; keep them unprefixed (do not use `NEXT_PUBLIC_`). Restart the dev server after changing them.
 
-## Learn More
+### Strands Decider choice endpoint
 
-To learn more about Next.js, take a look at the following resources:
+```dotenv
+STRANDS_DECIDER_ENDPOINT=http://localhost:8000/v1/systemone
+STRANDS_DECIDER_MODEL=strands-decider-2b
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Set the endpoint to the server's full `POST /v1/systemone` URL and set `STRANDS_DECIDER_MODEL` to the exact checkpoint/model name returned in the response's `model` field. A missing endpoint, failed request, or invalid/mismatched response is shown as a local heuristic fallback. The client checks the response contract and model-name string; it cannot prove the endpoint's identity or which binary/checkpoint ran. The operator must verify that independently before describing a response as actual Strands Decider inference.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Amazon Bedrock summary
 
-## Deploy on Vercel
+```dotenv
+BEDROCK_ENABLED=true
+AWS_REGION=us-east-1
+BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Bedrock is disabled unless `BEDROCK_ENABLED=true`. The server uses the AWS SDK default credential provider chain only after it is enabled. Configure credentials through the AWS-supported mechanism for your environment and make sure the selected region and model access are valid. This project does not inspect credentials. When disabled or when a request fails, a visibly labeled local simulated summary is used instead.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+These are configuration examples, not evidence of a successful remote invocation. **No Strands endpoint or Bedrock call was made while preparing this change.** Do not enable the integrations until you are ready to incur any applicable service usage and have authorized access.
+
+## Verification
+
+```bash
+npm test
+npx tsc --noEmit
+npm run lint
+npm run build
+```
+
+Financial projections are illustrative outputs of the local valuation model and are not investment advice. See [REUSABLE_DECIDER_PATTERN.md](./REUSABLE_DECIDER_PATTERN.md) for the current decision-selection implementation and limitations.

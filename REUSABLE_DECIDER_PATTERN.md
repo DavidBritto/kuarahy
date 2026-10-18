@@ -1,112 +1,61 @@
-# Reusable Decision Recipe: #tool-selection with Strands Decider 2B
+# Reusable tool-selection pattern
 
-> **Pattern Tag:** `#tool-selection`  
-> **Model Tag:** `#strands-decider-2b`  
-> **Target Framework:** AWS Strands Agents SDK & Node.js / TypeScript agent runtimes  
-> **Philosophy:** *The Frugal Architect* (Werner Vogels)
+This repository includes a TypeScript selector that submits a typed choice request to a configured HTTP endpoint and validates the response contract. A successful response is labeled as a remote endpoint result only when its model-name string matches the requested value. The client cannot verify the endpoint's identity or which binary/checkpoint ran; the operator must verify that independently before claiming actual Strands Decider inference. If no endpoint is configured, the request fails, or the response is invalid, the selector returns a domain-specific local heuristic result with `engine: 'heuristic-fallback'` and a `fallbackReason`. It does not silently label local decisions as model inference.
 
----
+## Current capabilities and limits
 
-## What Problem This Solves
-Large Language Models (70B+) incur ~1800ms of latency and consume ~0.24 Wh of energy per tool dispatch call. When an agent must make frequent, high-cadence decisions (e.g. edge device actuation, industrial safety stows, real-time microgrid arbitrage, or UI routing), using a generative LLM causes excessive latency and high cloud compute costs.
+| Capability | Current behavior |
+| --- | --- |
+| Request | `DeciderToolSelector.evaluate` sends a `POST` to the configured endpoint using the `/v1/systemone` typed choice request shape. |
+| Validation | The response must name the requested model, contain a `tool_selection` choice, select a registered option, and provide confidence from 0 to 1. |
+| Attribution | A contract-valid response with a matching model-name string is labeled as a remote endpoint result; the returned model name is retained. Operator verification is required to establish endpoint identity or actual model execution. |
+| Local fallback | A local heuristic is used when the endpoint is absent, fails, or returns an invalid response. Its provenance and reason are returned explicitly. |
+| Measurements | Per-call elapsed request duration is returned. Energy estimates are `null`; no comparative model benchmark or energy measurement is implemented. |
+| AWS Strands SDK | `asStrandsInterventionHandler()` returns a small adapter-shaped object, but this repository does not install or exercise the AWS Strands SDK integration. |
+| Physical control | The Kuarahy UI and API simulate telemetry and actuation values. They do not connect to sensors, motors, or a physical tracker. |
 
-**AWS Strands Decider 2B** solves this by evaluating a structured state and a typed question, returning a deterministic choice with calibrated confidence in **sub-115ms** with negligible power draw (~0.00008 Wh).
+The selector and its tests live in `lib/agent/decider-tool-selection.ts` and `lib/agent/decider-tool-selection.test.ts`. The Kuarahy-specific example registers domain choices and supplies a solar telemetry heuristic. Do not treat those simulated values as field evidence.
 
----
+## Configure the optional endpoint
 
-## Architecture of the Reusable Asset
+In the app repository, add a server-only `.env.local` file (ignored by Git):
 
+```dotenv
+STRANDS_DECIDER_ENDPOINT=http://localhost:8000/v1/systemone
+STRANDS_DECIDER_MODEL=strands-decider-2b
 ```
-Agent Context / State ──► DeciderToolSelector.evaluate(state) ──► Selected Tool (< 115ms)
-                                     │
-                        ┌────────────┴────────────┐
-                        ▼                         ▼
-             AWS Strands Endpoint        Deterministic Edge
-              (Strands Decider 2B)      Heuristic Fallback
-```
 
-This pattern exposes:
-1. `DeciderToolOption<TToolName>`: Strongly-typed tool option registry.
-2. `DeciderToolSelector<TState, TToolName>`: Generic orchestrator with automated state extraction.
-3. `asStrandsInterventionHandler()`: Zero-glue adapter for AWS Strands agents.
-4. Frugal energy metrics tracker measuring latency and Watt-hour savings against 70B LLMs.
+Use the full `POST /v1/systemone` endpoint URL. The value of `STRANDS_DECIDER_MODEL` must exactly match the expected checkpoint/model name returned in the response's top-level `model` field. A name mismatch is rejected and produces the local heuristic fallback. This string check does not establish the server's identity or the binary/checkpoint actually used; verify those with the endpoint operator. Do not add a `NEXT_PUBLIC_` prefix: the endpoint is consumed by the server route and should not be exposed to browser code.
 
----
-
-## Quickstart: How to Use in Your Own Agent
-
-### 1. Define your tools and state
+Generic use follows the actual selector configuration:
 
 ```typescript
-import { DeciderToolSelector, type DeciderToolOption } from './lib/agent/decider-tool-selection'
-
-type MyAgentTools = 'query_database' | 'escalate_to_human' | 'send_email'
-
-const myTools: DeciderToolOption<MyAgentTools>[] = [
-  {
-    id: 'query_database',
-    label: 'Query Customer DB',
-    description: 'Retrieve structured order and account details.',
-    whenToUse: 'When the user asks for account history or order status.',
-  },
-  {
-    id: 'escalate_to_human',
-    label: 'Escalate to Support Specialist',
-    description: 'Transfers conversation to a human support agent.',
-    whenToUse: 'When customer sentiment is negative or issues are unresolvable.',
-  },
-  {
-    id: 'send_email',
-    label: 'Dispatch Confirmation Email',
-    description: 'Sends transactional email receipt.',
-    whenToUse: 'When an order modification is finalized.',
-  },
-]
-```
-
-### 2. Instantiate the Selector
-
-```typescript
-interface MyState {
-  sentimentScore: number
-  hasActiveOrder: boolean
-  intent: string
-}
-
-const toolSelector = new DeciderToolSelector<MyState, MyAgentTools>({
-  question: 'Given the conversation intent and customer sentiment, which tool must be invoked?',
+const selector = new DeciderToolSelector<MyState, MyTool>({
+  question: 'Which registered tool should handle this state?',
   options: myTools,
-  extractState: (state) => ({
-    sentiment: state.sentimentScore,
-    intent: state.intent,
-    hasOrder: state.hasActiveOrder,
-  }),
+  extractState: (state) => ({ intent: state.intent, hasOrder: state.hasOrder }),
+  endpointUrl: process.env.STRANDS_DECIDER_ENDPOINT,
+  model: process.env.STRANDS_DECIDER_MODEL,
 })
+
+const decision = await selector.evaluate(currentState)
+if (decision.engine === 'heuristic-fallback') {
+  console.info('Local fallback:', decision.fallbackReason)
+}
 ```
 
-### 3. Evaluate in your agent loop or wire as an AWS Strands Handler
+The response includes `engine`, `model`, `fallbackReason` when applicable, `latencyMs`, and `whEstimated: null`. Record enough request and environment context before making performance claims; one request duration is not a percentile or model-to-model comparison.
 
-#### Option A: Direct evaluation in your route / handler
-```typescript
-const decision = await toolSelector.evaluate(currentState)
-console.log(`Dispatched tool: ${decision.choice} with confidence ${decision.confidence} (${decision.latencyMs}ms)`)
-console.log(`Estimated energy: ${decision.whEstimated} Wh`)
+## Optional Bedrock synthesis in this app
+
+The prospecting API only calls Bedrock when explicitly enabled on the server:
+
+```dotenv
+BEDROCK_ENABLED=true
+AWS_REGION=us-east-1
+BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
 ```
 
-#### Option B: Wire as an AWS Strands Intervention Handler
-```typescript
-const strandsHandler = toolSelector.asStrandsInterventionHandler()
-agent.registerIntervention(strandsHandler)
-```
+The AWS SDK default credential provider chain is used after opt-in. Configure credentials through your AWS environment's normal mechanism; this code does not inspect them. When Bedrock is disabled or the call fails, the API returns an explicitly labeled local simulated summary with a fallback reason. The repository's automated tests use mock responses and do not prove that a live service call succeeded.
 
----
-
-## Energy & Latency Benchmarks (Werner Vogels' Frugal Architecture)
-
-| Metric | Strands Decider 2B | Claude 3.5 Sonnet / 70B LLM | Savings Factor |
-| :--- | :--- | :--- | :--- |
-| **P95 Latency** | **115 ms** | ~1,850 ms | **16x faster** |
-| **Energy / Call** | **~0.00008 Wh** | ~0.24 Wh | **3,000x more efficient** |
-| **Cost / 10k Decisions** | **~$0.10** | ~$150.00 | **1,500x cheaper** |
-
-*Energy consumption benchmarks calculated following Google / arXiv: 2508.15734 methodology for edge vs datacenter inference.*
+**No Decider endpoint or Bedrock invocation was made while updating this pattern.** Configuration examples show how a developer can opt in later; they are not evidence of inference, measured latency, measured energy, or savings.
