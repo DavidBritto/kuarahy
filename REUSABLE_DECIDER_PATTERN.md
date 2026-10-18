@@ -21,11 +21,11 @@ The selector and its tests live in `lib/agent/decider-tool-selection.ts` and `li
 In the app repository, add a server-only `.env.local` file (ignored by Git):
 
 ```dotenv
-STRANDS_DECIDER_ENDPOINT=http://localhost:8000/v1/systemone
-STRANDS_DECIDER_MODEL=strands-decider-2b
+STRANDS_DECIDER_ENDPOINT=http://127.0.0.1:8000/v1/systemone
+STRANDS_DECIDER_MODEL=replace-with-model-name-from-health
 ```
 
-Use the full `POST /v1/systemone` endpoint URL. The value of `STRANDS_DECIDER_MODEL` must exactly match the expected checkpoint/model name returned in the response's top-level `model` field. A name mismatch is rejected and produces the local heuristic fallback. This string check does not establish the server's identity or the binary/checkpoint actually used; verify those with the endpoint operator. Do not add a `NEXT_PUBLIC_` prefix: the endpoint is consumed by the server route and should not be exposed to browser code.
+This is a loopback URL for a self-hosted Decider server; it is not an AWS-managed endpoint, and this app does not download or launch that server. Check the server's `/health` response and set `STRANDS_DECIDER_MODEL` to its actual model name. That value must also exactly match the response's top-level `model` field. A name mismatch is rejected and produces the local heuristic fallback. This string check does not establish the server's identity or the binary/checkpoint actually used; verify those with the endpoint operator. Do not add a `NEXT_PUBLIC_` prefix: the endpoint is consumed by the server route and should not be exposed to browser code.
 
 Generic use follows the actual selector configuration:
 
@@ -53,9 +53,9 @@ The prospecting API only calls Bedrock when explicitly enabled on the server:
 ```dotenv
 BEDROCK_ENABLED=true
 AWS_REGION=us-east-1
-BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+BEDROCK_MODEL_ID=amazon.nova-micro-v1:0
 ```
 
-The AWS SDK default credential provider chain is used after opt-in. Configure credentials through your AWS environment's normal mechanism; this code does not inspect them. When Bedrock is disabled or the call fails, the API returns an explicitly labeled local simulated summary with a fallback reason. The repository's automated tests use mock responses and do not prove that a live service call succeeded.
+Nova Micro is the default because it supports Converse and is intended for low-latency, low-cost summarization. The [AWS model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-amazon-nova-micro.html) lists `us-east-1` for in-region inference; examples use that region and do not imply support in other regions. The AWS SDK default credential provider chain is used after opt-in. Configure credentials through your AWS environment's normal mechanism; this code does not inspect them. When Bedrock is disabled or the call fails, the API returns an explicitly labeled local simulated summary with a fallback reason. The repository's automated tests use mock responses and do not prove that a live service call succeeded.
 
 **No Decider endpoint or Bedrock invocation was made while updating this pattern.** Configuration examples show how a developer can opt in later; they are not evidence of inference, measured latency, measured energy, or savings.

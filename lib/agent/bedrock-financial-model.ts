@@ -42,7 +42,7 @@ export async function generateBedrockProspectingSummary(
   const startTime = performance.now()
   const { metrics, coords, deciderLatencyMs, deciderEngine, deciderModel } = input
   const decisionProvenance = deciderEngine === 'strands-decider-2b'
-    ? `A validated remote Strands Decider response from model ${deciderModel ?? 'unknown'} selected the tool in ${deciderLatencyMs}ms.`
+    ? `An accepted response from the configured endpoint passed the expected contract and model-name checks (reported model: ${deciderModel ?? 'unknown'}; request duration: ${deciderLatencyMs}ms). Endpoint identity and underlying binary/checkpoint execution are not independently verified.`
     : `A local heuristic fallback selected the tool; no Strands Decider inference was attributed (request duration ${deciderLatencyMs}ms).`
 
   const prompt = `You are the lead solar energy economist for Kuarahy Solar AX.
@@ -62,10 +62,10 @@ A field parcel of ${metrics.areaHa.toFixed(1)} hectares at (${coords.lat.toFixed
 Provide:
 1. An executive 2-paragraph investment thesis for the landowner or clean energy investor.
 2. 3 bulleted key highlights.
-3. A 1-paragraph note on how Werner Vogels' Frugal Architecture was honored (running Decider 2B at the edge instead of full LLM inference for real-time telemetry).`
+3. A brief note on Frugal Architecture, grounded only in the decision provenance above. If it identifies a local heuristic fallback, explicitly say that no Strands Decider 2B inference is established. Do not claim Decider 2B ran at the edge, remote Decider execution occurred, or energy use or savings were measured. Even when endpoint checks pass, do not assert that an underlying Decider binary or checkpoint executed unless that is independently verified. Do not infer execution from configuration or request duration.`
 
   const region = process.env.AWS_REGION || 'us-east-1'
-  const modelId = process.env.BEDROCK_MODEL_ID || 'anthropic.claude-3-haiku-20240307-v1:0'
+  const modelId = process.env.BEDROCK_MODEL_ID || 'amazon.nova-micro-v1:0'
   let fallbackReason: BedrockProspectingSummaryOutput['fallbackReason'] = 'disabled'
 
   if (process.env.BEDROCK_ENABLED === 'true') {

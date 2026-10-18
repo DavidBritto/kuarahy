@@ -30,6 +30,7 @@ describe('Amazon Bedrock Financial Model Synthesis', () => {
     vi.clearAllMocks()
     vi.stubEnv('BEDROCK_ENABLED', 'false')
     vi.stubEnv('AWS_REGION', 'us-east-1')
+    vi.stubEnv('BEDROCK_MODEL_ID', '')
   })
 
   afterEach(() => vi.unstubAllEnvs())
@@ -45,18 +46,22 @@ describe('Amazon Bedrock Financial Model Synthesis', () => {
     expect(summary).toMatchObject({
       executiveSummary: 'A live investment thesis.',
       engine: 'amazon-bedrock',
-      modelId: 'anthropic.claude-3-haiku-20240307-v1:0',
+      modelId: 'amazon.nova-micro-v1:0',
     })
     expect(summary.fallbackReason).toBeUndefined()
     expect(mockClient).toHaveBeenCalledWith({ region: 'us-east-1' })
     expect(mockSend).toHaveBeenCalledOnce()
     const command = mockSend.mock.calls[0][0]
     expect(command.input).toMatchObject({
-      modelId: 'anthropic.claude-3-haiku-20240307-v1:0',
+      modelId: 'amazon.nova-micro-v1:0',
       inferenceConfig: { maxTokens: 600, temperature: 0.3 },
     })
     const request = command.input as { messages: Array<{ content: Array<{ text: string }> }> }
-    expect(request.messages[0].content[0].text).toContain('validated remote Strands Decider response from model checkpoint-name')
+    const prompt = request.messages[0].content[0].text
+    expect(prompt).toContain('An accepted response from the configured endpoint passed the expected contract and model-name checks')
+    expect(prompt).toContain('reported model: checkpoint-name')
+    expect(prompt).toContain('Endpoint identity and underlying binary/checkpoint execution are not independently verified.')
+    expect(prompt).not.toContain('validated remote Strands Decider response')
   })
 
   it('uses an explicitly labeled local summary and makes no SDK call when disabled', async () => {
@@ -70,6 +75,24 @@ describe('Amazon Bedrock Financial Model Synthesis', () => {
     expect(summary.frugalAnalysis).toContain('Amazon Bedrock no generó')
     expect(mockClient).not.toHaveBeenCalled()
     expect(mockSend).not.toHaveBeenCalled()
+  })
+
+  it('instructs Bedrock not to claim Decider execution when the decision used a local fallback', async () => {
+    vi.stubEnv('BEDROCK_ENABLED', 'true')
+    mockSend.mockResolvedValue({
+      output: { message: { content: [{ text: 'A provenance-aware summary.' }] } },
+    })
+
+    await generateSummary('heuristic-fallback', null)
+
+    const request = mockSend.mock.calls[0][0].input as {
+      messages: Array<{ content: Array<{ text: string }> }>
+    }
+    const prompt = request.messages[0].content[0].text
+    expect(prompt).toContain('A local heuristic fallback selected the tool')
+    expect(prompt).toContain('no Strands Decider 2B inference is established')
+    expect(prompt).toContain('Do not claim Decider 2B ran at the edge')
+    expect(prompt).toContain('do not assert that an underlying Decider binary or checkpoint executed unless that is independently verified')
   })
 
   it('falls back with a request failure reason when Converse rejects', async () => {

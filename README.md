@@ -18,21 +18,21 @@ Create an ignored local `.env.local` in the project root. Never put credentials 
 ### Strands Decider choice endpoint
 
 ```dotenv
-STRANDS_DECIDER_ENDPOINT=http://localhost:8000/v1/systemone
-STRANDS_DECIDER_MODEL=strands-decider-2b
+STRANDS_DECIDER_ENDPOINT=http://127.0.0.1:8000/v1/systemone
+STRANDS_DECIDER_MODEL=replace-with-model-name-from-health
 ```
 
-Set the endpoint to the server's full `POST /v1/systemone` URL and set `STRANDS_DECIDER_MODEL` to the exact checkpoint/model name returned in the response's `model` field. A missing endpoint, failed request, or invalid/mismatched response is shown as a local heuristic fallback. The client checks the response contract and model-name string; it cannot prove the endpoint's identity or which binary/checkpoint ran. The operator must verify that independently before describing a response as actual Strands Decider inference.
+This URL points to a self-hosted Strands Decider server listening on the same machine; it is not an AWS-managed endpoint, and this repository does not run or download the server. Check that server's `/health` response and set `STRANDS_DECIDER_MODEL` to its actual model name; the value must also match the response's `model` field. A missing endpoint, failed request, or invalid/mismatched response is shown as a local heuristic fallback. The client checks the response contract and model-name string; it cannot prove the endpoint's identity or which binary/checkpoint ran. The operator must verify that independently before describing a response as actual Strands Decider inference.
 
 ### Amazon Bedrock summary
 
 ```dotenv
 BEDROCK_ENABLED=true
 AWS_REGION=us-east-1
-BEDROCK_MODEL_ID=anthropic.claude-3-haiku-20240307-v1:0
+BEDROCK_MODEL_ID=amazon.nova-micro-v1:0
 ```
 
-Bedrock is disabled unless `BEDROCK_ENABLED=true`. The server uses the AWS SDK default credential provider chain only after it is enabled. Configure credentials through the AWS-supported mechanism for your environment and make sure the selected region and model access are valid. This project does not inspect credentials. When disabled or when a request fails, a visibly labeled local simulated summary is used instead.
+Bedrock is disabled unless `BEDROCK_ENABLED=true`. The default summary model is Nova Micro, which supports Converse; the [AWS model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-amazon-nova-micro.html) lists `us-east-1` for in-region inference. The server uses the AWS SDK default credential provider chain only after opt-in. Configure credentials through the AWS-supported mechanism for your environment and confirm model access in the chosen region. This project does not inspect credentials. When disabled or when a request fails, a visibly labeled local simulated summary is used instead.
 
 These are configuration examples, not evidence of a successful remote invocation. **No Strands endpoint or Bedrock call was made while preparing this change.** Do not enable the integrations until you are ready to incur any applicable service usage and have authorized access.
 
