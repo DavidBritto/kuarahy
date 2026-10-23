@@ -274,10 +274,23 @@ export default function SolarArc({
         </g>
       )}
 
-      {/* Sol actual */}
+      {/* Sol actual con halo de respiración solar suave */}
       {showSun && sunPoint && (
         <g>
-          <circle cx={sunPoint.x} cy={sunPoint.y} r={SUN_RADIUS + 4} fill="#F0A31A" opacity={0.2} className="animate-ping" />
+          <circle cx={sunPoint.x} cy={sunPoint.y} r={SUN_RADIUS + 4} fill="#F0A31A" opacity={0.25}>
+            <animate
+              attributeName="r"
+              values={`${SUN_RADIUS + 2};${SUN_RADIUS + 7};${SUN_RADIUS + 2}`}
+              dur="3.6s"
+              repeatCount="indefinite"
+            />
+            <animate
+              attributeName="opacity"
+              values="0.35;0.08;0.35"
+              dur="3.6s"
+              repeatCount="indefinite"
+            />
+          </circle>
           <circle cx={sunPoint.x} cy={sunPoint.y} r={SUN_RADIUS} fill={CHART_COLORS.accent} />
           <text x={sunPoint.x + 9} y={sunPoint.y - 4} fill="#F0A31A" fontSize={8} fontWeight="bold">
             {sunText} ({now.sun.elevation.toFixed(0)}°)
