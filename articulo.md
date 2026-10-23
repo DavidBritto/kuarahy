@@ -3,7 +3,7 @@
 > **Hackathon Submission:** AWS Agent Experience Hackathon: Strands Decider  
 > **Official Challenge Tags:** `#strands-decider-2b` · `#tool-selection`  
 > **Additional Categories:** `#aws-bedrock` · `#the-frugal-architect` · `#clean-energy` · `#digital-twin`  
-> **Open Source Repository:** [https://github.com/DavidBritto/kuarahy](https://github.com/DavidBritto/kuarahy)  
+> **Open Source Repository:** [https://github.com/DavidBritto/solaria](https://github.com/DavidBritto/solaria)  
 > **Author:** David Britto  
 
 ---
@@ -72,7 +72,7 @@ The naive modern response to automation is deploying heavy, energy-guzzling 70B+
 ## 3. Key Components & Implementation
 
 ### A. Sub-115ms Edge Tool Selection (`#tool-selection`)
-The decision selector in [`lib/agent/decider-tool-selection.ts`](https://github.com/DavidBritto/kuarahy/blob/main/lib/agent/decider-tool-selection.ts) exposes a reusable typed-choice dispatch contract designed for **AWS Strands Decider 2B**:
+The decision selector in [`lib/agent/decider-tool-selection.ts`](https://github.com/DavidBritto/solaria/blob/main/lib/agent/decider-tool-selection.ts) exposes a reusable typed-choice dispatch contract designed for **AWS Strands Decider 2B**:
 
 ```typescript
 export interface DeciderChoice {
@@ -163,6 +163,6 @@ By pairing mechatronics with AWS agent technology, we turn clean energy generati
 ---
 
 ### Links & Resources
-- **GitHub Repository:** [DavidBritto/kuarahy](https://github.com/DavidBritto/kuarahy)
-- **Demo Script & Scenarios:** [`DEMO_VIDEO_SCRIPT.md`](https://github.com/DavidBritto/kuarahy/blob/main/DEMO_VIDEO_SCRIPT.md)
-- **Reusable Decider Pattern:** [`REUSABLE_DECIDER_PATTERN.md`](https://github.com/DavidBritto/kuarahy/blob/main/REUSABLE_DECIDER_PATTERN.md)
+- **GitHub Repository:** [DavidBritto/solaria](https://github.com/DavidBritto/solaria)
+- **Demo Script & Scenarios:** [`DEMO_VIDEO_SCRIPT.md`](https://github.com/DavidBritto/solaria/blob/main/DEMO_VIDEO_SCRIPT.md)
+- **Reusable Decider Pattern:** [`REUSABLE_DECIDER_PATTERN.md`](https://github.com/DavidBritto/solaria/blob/main/REUSABLE_DECIDER_PATTERN.md)

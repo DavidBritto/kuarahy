@@ -55,8 +55,8 @@
 
 ### 1. Clone & Install
 ```bash
-git clone https://github.com/DavidBritto/kuarahy.git
-cd kuarahy
+git clone https://github.com/DavidBritto/solaria.git
+cd solaria
 npm install
 ```
 
