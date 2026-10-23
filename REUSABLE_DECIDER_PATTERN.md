@@ -53,9 +53,9 @@ The prospecting API only calls Bedrock when explicitly enabled on the server:
 ```dotenv
 BEDROCK_ENABLED=true
 AWS_REGION=us-east-1
-BEDROCK_MODEL_ID=amazon.nova-micro-v1:0
+BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
 ```
 
-Nova Micro is the default because it supports Converse and is intended for low-latency, low-cost summarization. The [AWS model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-amazon-nova-micro.html) lists `us-east-1` for in-region inference; examples use that region and do not imply support in other regions. The AWS SDK default credential provider chain is used after opt-in. Configure credentials through your AWS environment's normal mechanism; this code does not inspect them. When Bedrock is disabled or the call fails, the API returns an explicitly labeled local simulated summary with a fallback reason. The repository's automated tests use mock responses and do not prove that a live service call succeeded.
+Nova Lite is the default because it supports Converse and is intended for low-latency, low-cost summarization. The [AWS model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-amazon-nova-lite.html) lists `us-east-1` for in-region inference; examples use that region and do not imply support in other regions. The AWS SDK default credential provider chain is used after opt-in. Configure credentials through your AWS environment's normal mechanism; this code does not inspect them. When Bedrock is disabled or the call fails, the API returns an explicitly labeled local simulated summary with a fallback reason. The repository's automated tests use mock responses and do not prove that a live service call succeeded.
 
 **No Decider endpoint or Bedrock invocation was made while updating this pattern.** Configuration examples show how a developer can opt in later; they are not evidence of inference, measured latency, measured energy, or savings.

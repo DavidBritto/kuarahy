@@ -46,14 +46,14 @@ describe('Amazon Bedrock Financial Model Synthesis', () => {
     expect(summary).toMatchObject({
       executiveSummary: 'A live investment thesis.',
       engine: 'amazon-bedrock',
-      modelId: 'amazon.nova-micro-v1:0',
+      modelId: 'amazon.nova-lite-v1:0',
     })
     expect(summary.fallbackReason).toBeUndefined()
     expect(mockClient).toHaveBeenCalledWith({ region: 'us-east-1' })
     expect(mockSend).toHaveBeenCalledOnce()
     const command = mockSend.mock.calls[0][0]
     expect(command.input).toMatchObject({
-      modelId: 'amazon.nova-micro-v1:0',
+      modelId: 'amazon.nova-lite-v1:0',
       inferenceConfig: { maxTokens: 600, temperature: 0.3 },
     })
     const request = command.input as { messages: Array<{ content: Array<{ text: string }> }> }

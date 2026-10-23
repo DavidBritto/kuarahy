@@ -306,7 +306,7 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
         request_failed: 'Endpoint unreachable — active edge fallback',
         invalid_response: 'Contract mismatch — active edge fallback',
       },
-      liveBedrock: 'Amazon Bedrock Generative Synthesis (Nova Micro)',
+      liveBedrock: 'Amazon Bedrock Generative Synthesis (Nova Lite)',
       localBedrock: 'Autonomous Solar Valuation Engine',
       bedrockReasons: {
         disabled: 'Local Valuation Mode',
@@ -471,7 +471,7 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
         request_failed: 'Endpoint inaccesible — fallback activo en edge',
         invalid_response: 'Discrepancia de contrato — fallback activo en edge',
       },
-      liveBedrock: 'Amazon Bedrock Síntesis Generativa (Nova Micro)',
+      liveBedrock: 'Amazon Bedrock Síntesis Generativa (Nova Lite)',
       localBedrock: 'Motor de Valuación Financiera Autónoma',
       bedrockReasons: {
         disabled: 'Modo Valuación Local',

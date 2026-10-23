@@ -65,7 +65,7 @@ Provide:
 3. A brief note on Frugal Architecture, grounded only in the decision provenance above. If it identifies a local heuristic fallback, explicitly say that no Strands Decider 2B inference is established. Do not claim Decider 2B ran at the edge, remote Decider execution occurred, or energy use or savings were measured. Even when endpoint checks pass, do not assert that an underlying Decider binary or checkpoint executed unless that is independently verified. Do not infer execution from configuration or request duration.`
 
   const region = process.env.AWS_REGION || 'us-east-1'
-  const modelId = process.env.BEDROCK_MODEL_ID || 'amazon.nova-micro-v1:0'
+  const modelId = process.env.BEDROCK_MODEL_ID || 'amazon.nova-lite-v1:0'
   let fallbackReason: BedrockProspectingSummaryOutput['fallbackReason'] = 'disabled'
 
   if (process.env.BEDROCK_ENABLED === 'true') {

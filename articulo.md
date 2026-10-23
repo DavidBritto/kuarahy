@@ -32,10 +32,10 @@ STRANDS_DECIDER_MODEL=replace-with-model-name-from-health
 
 BEDROCK_ENABLED=true
 AWS_REGION=us-east-1
-BEDROCK_MODEL_ID=amazon.nova-micro-v1:0
+BEDROCK_MODEL_ID=amazon.nova-lite-v1:0
 ```
 
-The Decider URL is a self-hosted server on loopback, not an AWS-managed endpoint; this repository does not download or launch that server. Check its `/health` response and set `STRANDS_DECIDER_MODEL` to the actual model name, which must also match the response's top-level `model` field. A mismatch is rejected and uses the local fallback. The name check does not prove endpoint identity or actual binary/checkpoint execution; verify those with the endpoint operator. Bedrock remains disabled unless explicitly enabled; the AWS SDK default credential chain is used only after opt-in. Nova Micro (`amazon.nova-micro-v1:0`) is the default short-summary model and supports Converse. The [AWS model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-amazon-nova-micro.html) lists `us-east-1` for in-region inference; this example does not imply `sa-east-1` availability. Configure credentials through the normal AWS mechanism for your environment. The application does not inspect them.
+The Decider URL is a self-hosted server on loopback, not an AWS-managed endpoint; this repository does not download or launch that server. Check its `/health` response and set `STRANDS_DECIDER_MODEL` to the actual model name, which must also match the response's top-level `model` field. A mismatch is rejected and uses the local fallback. The name check does not prove endpoint identity or actual binary/checkpoint execution; verify those with the endpoint operator. Bedrock remains disabled unless explicitly enabled; the AWS SDK default credential chain is used only after opt-in. Nova Lite (`amazon.nova-lite-v1:0`) is the default short-summary model and supports Converse. The [AWS model card](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-amazon-nova-lite.html) lists `us-east-1` for in-region inference; this example does not imply `sa-east-1` availability. Configure credentials through the normal AWS mechanism for your environment. The application does not inspect them.
 
 These values are examples, not evidence of a successful request. **No Strands endpoint or Bedrock invocation was made while preparing this submission update.** Do not enable remote integrations unless you have authorized access and are prepared for any applicable service usage.
 
