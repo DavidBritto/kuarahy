@@ -30,6 +30,22 @@ interface SolarHeatmapProps {
   locale?: Locale
 }
 
+type RegionId = 'global' | 'southAmerica' | 'northAmerica' | 'europeMena' | 'asiaPacific'
+
+interface RegionPreset {
+  id: RegionId
+  center: [number, number]
+  zoom: number
+}
+
+const REGION_PRESETS: RegionPreset[] = [
+  { id: 'global', center: [15, 20], zoom: 1.8 },
+  { id: 'southAmerica', center: [-64.1888, -31.4201], zoom: 4.8 },
+  { id: 'northAmerica', center: [-110.0, 32.5], zoom: 4.2 },
+  { id: 'europeMena', center: [20.0, 28.0], zoom: 3.8 },
+  { id: 'asiaPacific', center: [85.0, 20.0], zoom: 3.2 },
+]
+
 type InspectLocation = (lat: number, lon: number, hectares: number, topology: SolarFieldTopology) => Promise<void>
 
 export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: SolarHeatmapProps) {
@@ -38,6 +54,7 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
   const mapRef = useRef<maplibregl.Map | null>(null)
   const markerRef = useRef<maplibregl.Marker | null>(null)
 
+  const [activeRegion, setActiveRegion] = useState<RegionId>('southAmerica')
   const [areaHa, setAreaHa] = useState<number>(10)
   const [topology, setTopology] = useState<SolarFieldTopology>('single_axis_tracker')
   const [loading, setLoading] = useState<boolean>(false)
@@ -80,9 +97,9 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
         ],
       },
       center: [-64.1888, -31.4201],
-      zoom: 6,
+      zoom: 5,
       maxZoom: 17,
-      minZoom: 3,
+      minZoom: 1.8,
     })
 
     mapRef.current = map
@@ -111,7 +128,7 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
         maxzoom: 12,
         paint: {
           'heatmap-weight': ['get', 'intensity'],
-          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 4, 1, 9, 3],
+          'heatmap-intensity': ['interpolate', ['linear'], ['zoom'], 1, 0.6, 4, 1.2, 9, 3],
           'heatmap-color': [
             'interpolate',
             ['linear'],
@@ -127,7 +144,7 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
             1,
             'rgba(255, 255, 220, 0.95)',
           ],
-          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 4, 25, 9, 65],
+          'heatmap-radius': ['interpolate', ['linear'], ['zoom'], 1, 10, 4, 25, 9, 65],
           'heatmap-opacity': 0.75,
         },
       })
@@ -286,6 +303,18 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
     }
   }
 
+  const handleRegionSelect = (preset: RegionPreset) => {
+    setActiveRegion(preset.id)
+    if (mapRef.current) {
+      mapRef.current.flyTo({
+        center: preset.center,
+        zoom: preset.zoom,
+        essential: true,
+        duration: 1000,
+      })
+    }
+  }
+
   return (
     <div className="relative w-full h-[650px] rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-950 shadow-2xl">
       {/* Map Canvas */}
@@ -303,6 +332,28 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
             <span>{t.prospecting.toolbarTitle}</span>
           </div>
           <span className="text-[10px] text-zinc-400 font-mono">MapLibre GL</span>
+        </div>
+
+        {/* Region Presets */}
+        <div>
+          <label className="text-[11px] text-zinc-400 block mb-1 font-medium">
+            {t.prospecting.regionLabel}
+          </label>
+          <div className="flex flex-wrap gap-1">
+            {REGION_PRESETS.map((reg) => (
+              <button
+                key={reg.id}
+                onClick={() => handleRegionSelect(reg)}
+                className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all ${
+                  activeRegion === reg.id
+                    ? 'bg-amber-500/20 text-amber-300 border border-amber-500/50'
+                    : 'bg-zinc-800/60 text-zinc-400 hover:text-zinc-200'
+                }`}
+              >
+                {t.prospecting.regions[reg.id]}
+              </button>
+            ))}
+          </div>
         </div>
 
         {/* Area Presets */}

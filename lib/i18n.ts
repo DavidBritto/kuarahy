@@ -96,6 +96,14 @@ export interface I18nContent {
     secondaryBadge: string
     loading: string
     toolbarTitle: string
+    regionLabel: string
+    regions: {
+      global: string
+      southAmerica: string
+      northAmerica: string
+      europeMena: string
+      asiaPacific: string
+    }
     areaLabel: string
     topologyLabel: string
     topologies: {
@@ -242,6 +250,14 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       secondaryBadge: 'Secondary Feature',
       loading: 'Loading MapLibre GL solar heatmap...',
       toolbarTitle: 'SolariA Solar Heatmap',
+      regionLabel: 'Solar Corridor:',
+      regions: {
+        global: 'Global',
+        southAmerica: 'South America',
+        northAmerica: 'North America',
+        europeMena: 'Europe & MENA',
+        asiaPacific: 'Asia-Pacific',
+      },
       areaLabel: 'Parcel Surface Area (Hectares):',
       topologyLabel: 'Technology Topology:',
       topologies: {
@@ -399,6 +415,14 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       secondaryBadge: 'Feature Secundaria',
       loading: 'Cargando mapa de calor MapLibre GL...',
       toolbarTitle: 'SolariA Solar Heatmap',
+      regionLabel: 'Corredor Solar:',
+      regions: {
+        global: 'Global',
+        southAmerica: 'Sudamérica',
+        northAmerica: 'Norteamérica',
+        europeMena: 'Europa & MENA',
+        asiaPacific: 'Asia-Pacífico',
+      },
       areaLabel: 'Superficie del Campo (Hectáreas):',
       topologyLabel: 'Topología Tecnológica:',
       topologies: {
