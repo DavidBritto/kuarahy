@@ -1,8 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   DeciderToolSelector,
-  KuarahySolarDecider,
-  type KuarahyAgentState,
+  SolariaSolarDecider,
+  type SolariaAgentState,
 } from './decider-tool-selection'
 
 describe('AWS Strands Decider 2B — #tool-selection Pattern', () => {
@@ -117,11 +117,11 @@ describe('AWS Strands Decider 2B — #tool-selection Pattern', () => {
   })
 })
 
-describe('KuarahySolarDecider — Domain Decision Matrix', () => {
-  const decider = new KuarahySolarDecider()
+describe('SolariaSolarDecider — Domain Decision Matrix', () => {
+  const decider = new SolariaSolarDecider()
 
   it('triggers storm_safeguard on dangerous wind speeds (Priority 1)', async () => {
-    const state: KuarahyAgentState = {
+    const state: SolariaAgentState = {
       mode: 'telemetry_tracking',
       coords: { lat: -25.2637, lon: -57.5759 }, // Asunción
       windSpeedKmh: 68,
@@ -136,7 +136,7 @@ describe('KuarahySolarDecider — Domain Decision Matrix', () => {
   })
 
   it('triggers clean_panels_rainwash on rainfall with accumulated dust (Mechatronics Wash)', async () => {
-    const state: KuarahyAgentState = {
+    const state: SolariaAgentState = {
       mode: 'telemetry_tracking',
       coords: { lat: -27.47, lon: -58.83 }, // Corrientes
       precipitationMm: 3.5, // Active rain
@@ -154,7 +154,7 @@ describe('KuarahySolarDecider — Domain Decision Matrix', () => {
   })
 
   it('triggers evaluate_solar_prospect when in prospecting mode with parcel area (Priority 2)', async () => {
-    const state: KuarahyAgentState = {
+    const state: SolariaAgentState = {
       mode: 'prospecting',
       coords: { lat: -31.4201, lon: -64.1888 }, // Córdoba
       areaHa: 25.5,
@@ -170,7 +170,7 @@ describe('KuarahySolarDecider — Domain Decision Matrix', () => {
   })
 
   it('triggers standby_idle at night with normal tariff', async () => {
-    const state: KuarahyAgentState = {
+    const state: SolariaAgentState = {
       mode: 'telemetry_tracking',
       coords: { lat: -34.6037, lon: -58.3816 }, // Buenos Aires
       elevation: -15, // Night
@@ -186,7 +186,7 @@ describe('KuarahySolarDecider — Domain Decision Matrix', () => {
   })
 
   it('triggers battery_arbitrage at night during peak tariff window if battery has charge', async () => {
-    const state: KuarahyAgentState = {
+    const state: SolariaAgentState = {
       mode: 'telemetry_tracking',
       coords: { lat: -34.6037, lon: -58.3816 },
       elevation: -5,
@@ -201,7 +201,7 @@ describe('KuarahySolarDecider — Domain Decision Matrix', () => {
   })
 
   it('triggers battery_arbitrage during peak midday solar generation', async () => {
-    const state: KuarahyAgentState = {
+    const state: SolariaAgentState = {
       mode: 'telemetry_tracking',
       coords: { lat: -25.2637, lon: -57.5759 },
       elevation: 65,
@@ -215,7 +215,7 @@ describe('KuarahySolarDecider — Domain Decision Matrix', () => {
   })
 
   it('triggers adjust_solar_tracker during normal active generation', async () => {
-    const state: KuarahyAgentState = {
+    const state: SolariaAgentState = {
       mode: 'telemetry_tracking',
       coords: { lat: -25.2637, lon: -57.5759 },
       elevation: 30,

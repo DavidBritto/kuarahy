@@ -1,10 +1,40 @@
 'use client'
 
-import React from 'react'
+import React, { useEffect } from 'react'
+import { motion, useMotionValue, useSpring } from 'motion/react'
 
 export default function SolarBackground() {
+  const mouseX = useMotionValue(-1000)
+  const mouseY = useMotionValue(-1000)
+
+  // Spring physics for smooth magnetic follow without latency lag
+  const springX = useSpring(mouseX, { stiffness: 45, damping: 20 })
+  const springY = useSpring(mouseY, { stiffness: 45, damping: 20 })
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mouseX.set(e.clientX - 192)
+      mouseY.set(e.clientY - 192)
+    }
+
+    window.addEventListener('mousemove', handleMouseMove)
+    return () => window.removeEventListener('mousemove', handleMouseMove)
+  }, [mouseX, mouseY])
+
   return (
     <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden bg-black">
+      {/* 0. Magnetic Cursor Glow (Follows mouse smoothly) */}
+      <motion.div
+        className="pointer-events-none fixed w-96 h-96 rounded-full blur-[90px] -z-10"
+        style={{
+          x: springX,
+          y: springY,
+          backgroundImage:
+            'radial-gradient(circle, rgba(249, 115, 22, 0.22) 0%, rgba(251, 191, 36, 0.1) 45%, transparent 75%)',
+        }}
+        aria-hidden="true"
+      />
+
       {/* 1. Radiant Solar Aura (Top center glow like the sun beyond the horizon) */}
       <div 
         className="absolute -top-32 left-1/2 -translate-x-1/2 w-[900px] h-[450px] rounded-full bg-gradient-to-b from-orange-500/20 via-amber-500/10 to-transparent blur-[140px] animate-pulse-glow"

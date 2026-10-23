@@ -39,7 +39,7 @@
  */
 
 import type { HourlyPoint, PanelConfig, SunPosition } from '@/lib/types'
-import type { KuarahyToolAction } from '@/lib/agent/decider-tool-selection'
+import type { SolariaToolAction } from '@/lib/agent/decider-tool-selection'
 import type { Locale } from '@/lib/i18n'
 import {
   buildArcPath,
@@ -55,7 +55,7 @@ export interface SolarArcProps {
   points: HourlyPoint[]
   now: HourlyPoint
   panel: PanelConfig
-  mode?: KuarahyToolAction
+  mode?: SolariaToolAction
   trackerTiltDeg?: number
   isRaining?: boolean
   locale?: Locale
@@ -105,34 +105,64 @@ export default function SolarArc({
   const pivotY = 165
   const panelLength = 68
   const halfLen = panelLength / 2
+  const normalLen = 32
 
-  // Determine active mechanical tilt based on Strands Decider 2B command
-  let mechanicalTilt = trackerTiltDeg ?? panel.tilt
+  // Unit vector normal to the panel face (pointing out from active PV surface towards sky/sun)
+  let nx = 0
+  let ny = -1 // Default: perpendicular pointing straight up towards zenith (0° tilt)
+
   if (mode === 'clean_panels_rainwash') {
-    mechanicalTilt = 65 // Steep hydro-cleaning angle
+    // 65° steep rainwash angle for gravity water runoff
+    const angleRad = (65 * Math.PI) / 180
+    nx = Math.sin(angleRad)
+    ny = -Math.cos(angleRad)
   } else if (mode === 'storm_safeguard') {
-    mechanicalTilt = 0 // Horizontal aerodefense stow
-  } else if (mode === 'adjust_solar_tracker' && showSun && sunPoint) {
-    // Dynamically align normal vector directly to sun position
+    // 0° aerodynamic defense stow: completely flat horizontal
+    nx = 0
+    ny = -1
+  } else if (showSun && sunPoint) {
+    // Active solar tracking: point normal vector directly towards sun position
     const dx = sunPoint.x - pivotX
     const dy = sunPoint.y - pivotY
-    const sunAngleDeg = Math.atan2(dy, dx) * (180 / Math.PI)
-    mechanicalTilt = Math.max(-60, Math.min(60, -(sunAngleDeg + 90)))
+    const dist = Math.sqrt(dx * dx + dy * dy)
+    if (dist > 0.001) {
+      // Zenith angle in degrees: negative = morning (left/east), positive = afternoon (right/west)
+      const zenithAngleDeg = Math.atan2(dx, -dy) * (180 / Math.PI)
+      // Clamped to physical tracker slew drive mechanical limit: [-60°, +60°]
+      const clampedAngleDeg = Math.max(-60, Math.min(60, zenithAngleDeg))
+      const rad = (clampedAngleDeg * Math.PI) / 180
+      nx = Math.sin(rad)
+      ny = -Math.cos(rad)
+    }
   }
 
-  const rad = (mechanicalTilt * Math.PI) / 180
-  const cos = Math.cos(rad)
-  const sin = Math.sin(rad)
+  // Tangent vector along the panel (strictly perpendicular to surface normal):
+  // When normal is (nx, ny), tangent is (-ny, nx). Since ny is negative, -ny > 0 (points rightward).
+  const tx = -ny
+  const ty = nx
 
-  const x1 = pivotX - halfLen * cos
-  const y1 = pivotY - halfLen * sin
-  const x2 = pivotX + halfLen * cos
-  const y2 = pivotY + halfLen * sin
+  // Panel endpoints
+  const x1 = pivotX - halfLen * tx
+  const y1 = pivotY - halfLen * ty
+  const x2 = pivotX + halfLen * tx
+  const y2 = pivotY + halfLen * ty
 
-  // Normal vector (perpendicular to panel)
-  const normalLen = 32
-  const normalX = pivotX - normalLen * sin
-  const normalY = pivotY + normalLen * cos
+  // Normal vector tip (points into the sky towards the sun)
+  const normalX = pivotX + normalLen * nx
+  const normalY = pivotY + normalLen * ny
+
+  // Active PV face offset 2px in direction of normal (towards sun)
+  const pvOffset = 2.5
+  const fx1 = x1 + pvOffset * nx
+  const fy1 = y1 + pvOffset * ny
+  const fx2 = x2 + pvOffset * nx
+  const fy2 = y2 + pvOffset * ny
+
+  // Back chassis offset 2px opposite to normal (towards ground)
+  const bx1 = x1 - 2 * nx
+  const by1 = y1 - 2 * ny
+  const bx2 = x2 - 2 * nx
+  const by2 = y2 - 2 * ny
 
   const horizonText = locale === 'es' ? 'HORIZONTE 0°' : 'HORIZON 0°'
   const sunText = locale === 'es' ? 'SOL' : 'SUN'
@@ -143,10 +173,30 @@ export default function SolarArc({
     <svg
       viewBox={`0 0 ${SOLAR_ARC_VIEWBOX.width} ${SOLAR_ARC_VIEWBOX.height}`}
       role="img"
-      aria-label={locale === 'es' ? 'Gemelo Digital del Arco Solar y Mecatrónica Kuarahy' : 'Kuarahy Solar Arc & Mechatronics Digital Twin'}
+      aria-label={locale === 'es' ? 'Gemelo Digital del Arco Solar y Mecatrónica SolariA' : 'SolariA Solar Arc & Mechatronics Digital Twin'}
       style={{ fontFamily: CHART_FONT_FAMILY, backgroundColor: CHART_COLORS.background }}
       className="w-full h-auto select-none"
     >
+      <defs>
+        {/* Arrow marker for surface normal vector */}
+        <marker
+          id="normalArrow"
+          viewBox="0 0 10 10"
+          refX="6"
+          refY="5"
+          markerWidth="5"
+          markerHeight="5"
+          orient="auto-start-reverse"
+        >
+          <path d="M 0 1 L 8 5 L 0 9 z" fill="#F0A31A" />
+        </marker>
+        {/* Glowing gradient for incoming solar flux */}
+        <linearGradient id="solarFluxGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#F0A31A" stopOpacity="0.8" />
+          <stop offset="100%" stopColor="#F0A31A" stopOpacity="0.15" />
+        </linearGradient>
+      </defs>
+
       <rect x={0} y={0} width={SOLAR_ARC_VIEWBOX.width} height={SOLAR_ARC_VIEWBOX.height} fill={CHART_COLORS.background} />
 
       {/* Grid lines for elevation */}
@@ -187,18 +237,41 @@ export default function SolarArc({
         />
       )}
 
-      {/* Sun ray targeting tracker */}
-      {showSun && sunPoint && mode === 'adjust_solar_tracker' && (
-        <line
-          x1={sunPoint.x}
-          y1={sunPoint.y}
-          x2={pivotX}
-          y2={pivotY}
-          stroke="#F0A31A"
-          strokeWidth={0.8}
-          strokeDasharray="3 3"
-          opacity={0.4}
-        />
+      {/* Sun rays streaming directly to ACTIVE PV FACE */}
+      {showSun && sunPoint && (
+        <g opacity={0.65} className="transition-all duration-300">
+          {/* Main center ray to active surface */}
+          <line
+            x1={sunPoint.x}
+            y1={sunPoint.y}
+            x2={pivotX + 2.5 * nx}
+            y2={pivotY + 2.5 * ny}
+            stroke="#F0A31A"
+            strokeWidth={1}
+            strokeDasharray="4 3"
+          />
+          {/* Edge rays showing flux coverage on the panel face */}
+          <line
+            x1={sunPoint.x}
+            y1={sunPoint.y}
+            x2={fx1}
+            y2={fy1}
+            stroke="#F0A31A"
+            strokeWidth={0.6}
+            strokeDasharray="2 3"
+            opacity={0.4}
+          />
+          <line
+            x1={sunPoint.x}
+            y1={sunPoint.y}
+            x2={fx2}
+            y2={fy2}
+            stroke="#F0A31A"
+            strokeWidth={0.6}
+            strokeDasharray="2 3"
+            opacity={0.4}
+          />
+        </g>
       )}
 
       {/* Sol actual */}
@@ -225,39 +298,65 @@ export default function SolarArc({
       />
 
       {/* Pivote del Motorreductor Mechatrónico */}
-      <circle cx={pivotX} cy={pivotY} r={5} fill="#F0A31A" stroke="#000" strokeWidth={1.5} />
+      <circle cx={pivotX} cy={pivotY} r={5.5} fill="#F0A31A" stroke="#000" strokeWidth={1.5} />
 
-      {/* Panel Solar Fotovoltaico (Estructura Móvil) */}
+      {/* Dorso del Panel (Chasis Estructural / Marco de Acero) */}
       <line
-        x1={x1}
-        y1={y1}
-        x2={x2}
-        y2={y2}
-        stroke="#1d4ed8"
-        strokeWidth={6}
+        x1={bx1}
+        y1={by1}
+        x2={bx2}
+        y2={by2}
+        stroke="#1e293b"
+        strokeWidth={8}
         strokeLinecap="round"
+        className="transition-all duration-300 ease-out"
       />
-      {/* Celda reflectiva superior */}
+
+      {/* Cara Activa Frontal (Celdas Fotovoltaicas Monocristalinas orientadas al Sol) */}
       <line
-        x1={x1}
-        y1={y1}
-        x2={x2}
-        y2={y2}
+        x1={fx1}
+        y1={fy1}
+        x2={fx2}
+        y2={fy2}
+        stroke="#1e40af"
+        strokeWidth={5}
+        strokeLinecap="round"
+        className="transition-all duration-300 ease-out"
+      />
+      {/* Vidrio reflectivo antirreflejo / Agua en autolavado */}
+      <line
+        x1={fx1}
+        y1={fy1}
+        x2={fx2}
+        y2={fy2}
         stroke={mode === 'clean_panels_rainwash' ? '#38bdf8' : '#60a5fa'}
-        strokeWidth={3}
+        strokeWidth={2.5}
         strokeLinecap="round"
+        className="transition-all duration-300 ease-out"
       />
 
-      {/* Vector Normal del Panel */}
+      {/* Vector Normal del Panel (n̂ perpendicular apuntando al Sol) */}
       <line
         x1={pivotX}
         y1={pivotY}
         x2={normalX}
         y2={normalY}
-        stroke="rgba(240, 163, 26, 0.7)"
-        strokeWidth={1}
-        strokeDasharray="2 2"
+        stroke="#F0A31A"
+        strokeWidth={1.4}
+        strokeDasharray="3 2"
+        markerEnd="url(#normalArrow)"
+        className="transition-all duration-300 ease-out"
       />
+      <text
+        x={normalX + (nx >= 0 ? 5 : -22)}
+        y={normalY - 3}
+        fill="#F0A31A"
+        fontSize={7.5}
+        fontWeight="bold"
+        className="transition-all duration-300 font-mono"
+      >
+        n̂
+      </text>
 
       {/* Gotas de lluvia en modo autolavado */}
       {(mode === 'clean_panels_rainwash' || isRaining) && (

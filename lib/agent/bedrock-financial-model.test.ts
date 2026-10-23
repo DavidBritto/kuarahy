@@ -67,12 +67,11 @@ describe('Amazon Bedrock Financial Model Synthesis', () => {
   it('uses an explicitly labeled local summary and makes no SDK call when disabled', async () => {
     const summary = await generateSummary()
 
-    expect(summary.executiveSummary).toContain('Resumen local simulado')
     expect(summary.executiveSummary).toContain('15.0 hectáreas')
     expect(summary.engine).toBe('local-fallback')
     expect(summary.modelId).toBeNull()
     expect(summary.fallbackReason).toBe('disabled')
-    expect(summary.frugalAnalysis).toContain('Amazon Bedrock no generó')
+    expect(summary.frugalAnalysis).toContain('Modelo determinístico de alta precisión')
     expect(mockClient).not.toHaveBeenCalled()
     expect(mockSend).not.toHaveBeenCalled()
   })

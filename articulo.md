@@ -1,10 +1,10 @@
-# Kuarahy AX: A Solar-Operations Simulation with Optional Decider and Bedrock Integrations
+# SolariA: A Solar-Operations Simulation with Optional Decider and Bedrock Integrations
 
 > **Hackathon context:** AWS Agent Experience Hackathon: Strands Decider
 > **Tags:** `#strands-decider-2b` · `#tool-selection`
-> **Repository:** [DavidBritto/kuarahy](https://github.com/DavidBritto/kuarahy)
+> **Repository:** [DavidBritto/solaria](https://github.com/DavidBritto/solaria)
 
-Kuarahy AX is a bilingual web demo for exploring solar-tracker scenarios and parcel estimates. It keeps local decision and summary fallbacks available and reports whether a displayed result came from a configured remote integration or a local fallback. Map tiles and build-time Google Font retrieval require network access. The project is a simulation: no solar sensors, field telemetry, actuators, or physical tracker are connected.
+SolariA is a bilingual web demo for exploring solar-tracker scenarios and parcel estimates. It keeps local decision and summary fallbacks available and reports whether a displayed result came from a configured remote integration or a local fallback. Map tiles and build-time Google Font retrieval require network access. The project is a simulation: no solar sensors, field telemetry, actuators, or physical tracker are connected.
 
 ## What the demo does
 

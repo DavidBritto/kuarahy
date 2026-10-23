@@ -1,4 +1,4 @@
-# Kuarahy AX — Demo recording outline
+# SolariA AX — Demo recording outline
 
 This script describes the current local demo. Decision and summary fallbacks work without configured Decider or Bedrock integrations. Map tiles are requested from OpenStreetMap, and the app build fetches Google Fonts through `next/font`, so those resources require network access. Contract and model-name validation cannot prove a configured endpoint's identity or actual binary/checkpoint execution; verify those with the endpoint operator before claiming real Strands Decider inference. This script does not claim a live Decider or Bedrock invocation, physical actuation, measured latency percentiles, or measured energy savings. If you record with remote integrations enabled, show their provenance labels and retain the logs/configuration needed to substantiate that specific run.
 
@@ -15,7 +15,7 @@ This script describes the current local demo. Decision and summary fallbacks wor
 
 Show the solar telemetry controls and presets.
 
-> “Kuarahy AX is an interactive solar-operations demo. It simulates solar conditions and equipment behavior so we can inspect a set of decision scenarios. It is not connected to a physical tracker or live sensor data.”
+> “SolariA AX is an interactive solar-operations demo. It simulates solar conditions and equipment behavior so we can inspect a set of decision scenarios. It is not connected to a physical tracker or live sensor data.”
 
 ### 0:30–1:15 — Decision provenance
 
@@ -39,7 +39,7 @@ Open the prospecting map, select a parcel, and open the generated summary. Map t
 
 Switch to Spanish and back to English. Avoid quantitative performance or savings claims unless separate measurements support them.
 
-> “Kuarahy AX keeps remote inference integrations optional and makes the local fallback visible. The source and documentation explain how to configure each integration and what this demo does—and does not—measure.”
+> “SolariA AX keeps remote inference integrations optional and makes the local fallback visible. The source and documentation explain how to configure each integration and what this demo does—and does not—measure.”
 
 ## Guion alternativo en español
 
@@ -47,7 +47,7 @@ Switch to Spanish and back to English. Avoid quantitative performance or savings
 
 Muestre los controles y presets de telemetría solar.
 
-> “Kuarahy AX es una demo interactiva de operación solar. Simula condiciones solares y comportamiento del equipo para explorar escenarios de decisión. No está conectada a seguidores físicos ni a sensores en vivo.”
+> “SolariA AX es una demo interactiva de operación solar. Simula condiciones solares y comportamiento del equipo para explorar escenarios de decisión. No está conectada a seguidores físicos ni a sensores en vivo.”
 
 ### 0:30–1:15 — Procedencia de la decisión
 
@@ -71,4 +71,4 @@ Abra el mapa, seleccione un terreno y muestre el resumen. Los mosaicos del mapa 
 
 Cambie el idioma a inglés y vuelva al español. Evite afirmaciones cuantitativas de rendimiento o ahorro salvo que haya mediciones independientes que las respalden.
 
-> “Kuarahy AX mantiene opcionales las integraciones de inferencia remota y hace visible el fallback local. El código y la documentación explican cómo configurar cada integración y qué mide —y qué no mide— esta demo.”
+> “SolariA AX mantiene opcionales las integraciones de inferencia remota y hace visible el fallback local. El código y la documentación explican cómo configurar cada integración y qué mide —y qué no mide— esta demo.”

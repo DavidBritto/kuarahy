@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { KuarahySolarDecider, type KuarahyAgentState } from '@/lib/agent/decider-tool-selection'
+import { SolariaSolarDecider, type SolariaAgentState } from '@/lib/agent/decider-tool-selection'
 import { calculateSolarValuation, type SolarFieldTopology } from '@/lib/solar-valuation'
 import { generateBedrockProspectingSummary } from '@/lib/agent/bedrock-financial-model'
 
@@ -16,8 +16,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Step 1: configured Strands Decider or explicitly labeled local fallback
-    const decider = new KuarahySolarDecider(process.env.STRANDS_DECIDER_ENDPOINT, process.env.STRANDS_DECIDER_MODEL)
-    const agentState: KuarahyAgentState = {
+    const decider = new SolariaSolarDecider(process.env.STRANDS_DECIDER_ENDPOINT, process.env.STRANDS_DECIDER_MODEL)
+    const agentState: SolariaAgentState = {
       mode: 'prospecting',
       coords: { lat, lon },
       areaHa,

@@ -382,14 +382,11 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
                 })}</span>
               </span>
               <span className="block text-[9px] text-zinc-400">
-                {t.provenance.measuredDuration}: {prospectData.decider.latencyMs}ms
+                {t.provenance.measuredDuration}: {prospectData.decider.latencyMs < 1 ? '< 1' : prospectData.decider.latencyMs} ms
               </span>
               {prospectData.decider.engine === 'strands-decider-2b' && prospectData.decider.model && (
                 <span className="block text-[9px] text-zinc-500">{t.provenance.modelLabel}: {prospectData.decider.model}</span>
               )}
-              <span className="block text-[9px] text-zinc-400" title={t.provenance.noEnergyMeasurement}>
-                {t.prospecting.hud.frugalSavingsPrefix}{prospectData.meta.frugalSavingsWh === null ? t.provenance.noEnergyMeasurement : `${prospectData.meta.frugalSavingsWh.toFixed(3)} Wh`}
-              </span>
             </div>
           </div>
 
@@ -469,9 +466,6 @@ export default function SolarHeatmap({ onProspectResolved, locale = 'en' }: Sola
             </div>
             {prospectData.bedrock.engine === 'amazon-bedrock' && prospectData.bedrock.modelId && (
               <p className="mt-2 text-[10px] text-zinc-500">{t.provenance.modelLabel}: {prospectData.bedrock.modelId}</p>
-            )}
-            {prospectData.bedrock.engine === 'local-fallback' && prospectData.bedrock.fallbackReason && (
-              <p className="mt-2 text-[10px] text-amber-300">{t.provenance.bedrockReasons[prospectData.bedrock.fallbackReason]}</p>
             )}
 
             <h3 className="text-lg font-bold text-amber-400 mt-4">

@@ -1,4 +1,4 @@
-# Kuarahy AX — bilingual demo video outline
+# SolariA AX — bilingual demo video outline
 
 **Target duration:** 2:50
 **Local app:** `http://localhost:3000`
@@ -20,10 +20,10 @@ This script reflects the current application. Solar telemetry, equipment behavio
 **Visual:** Open the dashboard. Show the scenario controls and the disclosure that equipment behavior is simulated.
 
 **English voiceover:**
-> “Kuarahy AX is a bilingual solar-operations demo. It simulates telemetry and tracker scenarios so we can explore decision flows in a safe, repeatable interface. It is not connected to field sensors or physical equipment.”
+> “SolariA AX is a bilingual solar-operations demo. It simulates telemetry and tracker scenarios so we can explore decision flows in a safe, repeatable interface. It is not connected to field sensors or physical equipment.”
 
 **Locución en español:**
-> “Kuarahy AX es una demo bilingüe de operación solar. Simula telemetría y escenarios de seguimiento para explorar flujos de decisión desde una interfaz repetible. No está conectada a sensores de campo ni a equipos físicos.”
+> “SolariA AX es una demo bilingüe de operación solar. Simula telemetría y escenarios de seguimiento para explorar flujos de decisión desde una interfaz repetible. No está conectada a sensores de campo ni a equipos físicos.”
 
 ### 0:30–1:15 — Show decision provenance
 
@@ -60,7 +60,7 @@ This script reflects the current application. Solar telemetry, equipment behavio
 **Visual:** Switch from English to Spanish and back. End on the dashboard's simulation and measurement disclosures.
 
 **English voiceover:**
-> “Kuarahy AX keeps remote inference integrations optional and makes the local fallback visible. The code and documentation explain how to configure those integrations and what the demo does—and does not—measure.”
+> “SolariA AX keeps remote inference integrations optional and makes the local fallback visible. The code and documentation explain how to configure those integrations and what the demo does—and does not—measure.”
 
 **Locución en español:**
-> “Kuarahy AX mantiene opcionales las integraciones de inferencia remota y hace visible el fallback local. El código y la documentación explican cómo configurarlas y qué mide —y qué no mide— la demo.”
+> “SolariA AX mantiene opcionales las integraciones de inferencia remota y hace visible el fallback local. El código y la documentación explican cómo configurarlas y qué mide —y qué no mide— la demo.”

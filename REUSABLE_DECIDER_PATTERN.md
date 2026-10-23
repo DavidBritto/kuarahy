@@ -12,9 +12,9 @@ This repository includes a TypeScript selector that submits a typed choice reque
 | Local fallback | A local heuristic is used when the endpoint is absent, fails, or returns an invalid response. Its provenance and reason are returned explicitly. |
 | Measurements | Per-call elapsed request duration is returned. Energy estimates are `null`; no comparative model benchmark or energy measurement is implemented. |
 | AWS Strands SDK | `asStrandsInterventionHandler()` returns a small adapter-shaped object, but this repository does not install or exercise the AWS Strands SDK integration. |
-| Physical control | The Kuarahy UI and API simulate telemetry and actuation values. They do not connect to sensors, motors, or a physical tracker. |
+| Physical control | The SolariA UI and API simulate telemetry and actuation values. They do not connect to sensors, motors, or a physical tracker. |
 
-The selector and its tests live in `lib/agent/decider-tool-selection.ts` and `lib/agent/decider-tool-selection.test.ts`. The Kuarahy-specific example registers domain choices and supplies a solar telemetry heuristic. Do not treat those simulated values as field evidence.
+The selector and its tests live in `lib/agent/decider-tool-selection.ts` and `lib/agent/decider-tool-selection.test.ts`. The SolariA-specific example registers domain choices and supplies a solar telemetry heuristic. Do not treat those simulated values as field evidence.
 
 ## Configure the optional endpoint
 

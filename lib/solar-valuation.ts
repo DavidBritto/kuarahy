@@ -1,5 +1,5 @@
 /**
- * Kuarahy Solar AX — Engineering & Financial Valuation Engine
+ * Solaria — Engineering & Financial Valuation Engine
  * 
  * Computes deterministic solar energy production, CapEx, operating costs,
  * and multi-year financial returns per hectare of land.

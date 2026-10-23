@@ -1,4 +1,4 @@
-# Kuarahy — plan de ejecución por etapas
+# SolariA — plan de ejecución por etapas
 
 **Categoría:** Energía Sustentable y Medio Ambiente
 **Equipo:** Lisandro · David · Lautaro · Cain — carriles de archivos exclusivos
@@ -109,7 +109,7 @@ Open-Meteo con `timezone=auto` devuelve `"2026-08-01T15:00"` — **sin offset**.
 Tipea Lisandro, los otros tres miran y dictan. **Nadie codea antes de que el contrato esté pusheado.**
 
 ```bash
-npx create-next-app@latest kuarahy --typescript --tailwind --app --eslint --no-src-dir --import-alias "@/*"
+npx create-next-app@latest solaria --typescript --tailwind --app --eslint --no-src-dir --import-alias "@/*"
 ```
 
 ```bash

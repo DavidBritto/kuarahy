@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Este documento deriva los requisitos formales de los tres componentes de visualización del carril de David en **Kuarahy**: `SolarArc.tsx`, `ValidationChart.tsx` y `PowerChart.tsx`. Los requisitos se derivan del diseño técnico (`design.md`) ya definido y del contrato de tipos compartido (`lib/types.ts`, §4.1 del Plan del equipo).
+Este documento deriva los requisitos formales de los tres componentes de visualización del carril de David en **SolariA**: `SolarArc.tsx`, `ValidationChart.tsx` y `PowerChart.tsx`. Los requisitos se derivan del diseño técnico (`design.md`) ya definido y del contrato de tipos compartido (`lib/types.ts`, §4.1 del Plan del equipo).
 
 Los tres componentes son de presentación pura: reciben props ya normalizadas (`HourlyPoint[]`, `HourlyPoint`, `PanelConfig`) desde `components/Dashboard.tsx` y no acceden directamente a APIs externas ni al normalizador. El orden de prioridad de implementación es `SolarArc` (must-have) → `ValidationChart` (pico del pitch, must-have) → `PowerChart` (objetivo elástico).
 
@@ -89,7 +89,7 @@ Los tres componentes son de presentación pura: reciben props ya normalizadas (`
 
 ### Requirement 5: Convenciones no negociables del proyecto
 
-**User Story:** Como equipo de Kuarahy, queremos que las reglas de convención críticas del §1 del Plan (azimut, elevación, ausencia de NaN/Infinity) se respeten estrictamente dentro de `components/`, para evitar el bug más caro del proyecto: una recomendación o dibujo que apunta al lado equivocado sin lanzar ninguna excepción.
+**User Story:** Como equipo de SolariA, queremos que las reglas de convención críticas del §1 del Plan (azimut, elevación, ausencia de NaN/Infinity) se respeten estrictamente dentro de `components/`, para evitar el bug más caro del proyecto: una recomendación o dibujo que apunta al lado equivocado sin lanzar ninguna excepción.
 
 #### Acceptance Criteria
 

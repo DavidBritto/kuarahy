@@ -1,14 +1,14 @@
-# ☀️ Kuarahy AX — Autonomous Frugal Solar Agent
+# ☀️ SolariA AX — Autonomous Frugal Solar Agent
 ## AWS Agent Experience Hackathon (October 16 – 23, 2026)
 
 > **Architectural Thesis:** Built strictly under Werner Vogels' **"The Frugal Architect"** laws.  
-> Using heavy, energy-guzzling 70B+ LLMs in giant cloud datacenters to manage green solar energy is an ecological and economic paradox (burning megawatts to save kilowatts). **Kuarahy AX** deploys **AWS Strands Decider 2B** for sub-115ms deterministic decision making and tool dispatching, paired with **Amazon Bedrock** for high-level generative synthesis and executive investment reporting.
+> Using heavy, energy-guzzling 70B+ LLMs in giant cloud datacenters to manage green solar energy is an ecological and economic paradox (burning megawatts to save kilowatts). **SolariA AX** deploys **AWS Strands Decider 2B** for sub-115ms deterministic decision making and tool dispatching, paired with **Amazon Bedrock** for high-level generative synthesis and executive investment reporting.
 
 ---
 
 ## 📋 Hackathon Requirements & Qualification Matrix
 
-| Requirement | Implementation in Kuarahy AX | Status |
+| Requirement | Implementation in SolariA AX | Status |
 | :--- | :--- | :--- |
 | **Strands Decider 2B** | Evaluates parcel prospecting feasibility & high-frequency tracker/battery dispatch (<115ms). | 🟡 In Progress |
 | **Amazon Bedrock** | Generates executive financial reports, ROI projections, and land yield synthesis. | ⚪ Pending |

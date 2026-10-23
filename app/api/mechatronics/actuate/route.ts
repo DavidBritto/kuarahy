@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { KuarahySolarDecider, type KuarahyAgentState } from '@/lib/agent/decider-tool-selection'
+import { SolariaSolarDecider, type SolariaAgentState } from '@/lib/agent/decider-tool-selection'
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,8 +14,8 @@ export async function POST(req: NextRequest) {
     const lat = Number(body.lat ?? -27.47)
     const lon = Number(body.lon ?? -58.83)
 
-    const decider = new KuarahySolarDecider(process.env.STRANDS_DECIDER_ENDPOINT, process.env.STRANDS_DECIDER_MODEL)
-    const state: KuarahyAgentState = {
+    const decider = new SolariaSolarDecider(process.env.STRANDS_DECIDER_ENDPOINT, process.env.STRANDS_DECIDER_MODEL)
+    const state: SolariaAgentState = {
       mode: 'telemetry_tracking',
       coords: { lat, lon },
       elevation,

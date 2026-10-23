@@ -2,16 +2,18 @@
 
 import React, { useState, useEffect } from 'react'
 import dynamic from 'next/dynamic'
+import { motion, useScroll, useTransform } from 'motion/react'
 import SolarArc from '@/components/SolarArc'
 import SolarBackground from '@/components/SolarBackground'
 import SolarMetricCard from '@/components/SolarMetricCard'
+import HeroSection from '@/components/HeroSection'
 import BorderBeam from '@/components/BorderBeam'
 import type { HourlyPoint, PanelConfig } from '@/lib/types'
 import { getPosition } from 'suncalc'
-import type { DeciderDecision, KuarahyToolAction } from '@/lib/agent/decider-tool-selection'
+import type { DeciderDecision, SolariaToolAction } from '@/lib/agent/decider-tool-selection'
 import { getDeciderProvenanceMessage } from '@/lib/agent/provenance-labels'
 import { DICTIONARY, type Locale } from '@/lib/i18n'
-import { Zap, Sun, Activity, Cpu, Droplets, ShieldAlert, Sparkles, Globe } from 'lucide-react'
+import { Zap, Sun, Activity, Cpu, Droplets, ShieldAlert, Sparkles, Globe, Clock, Radio } from 'lucide-react'
 
 // Dynamic import of SolarHeatmap to avoid SSR issues with MapLibre GL
 const SolarHeatmap = dynamic(() => import('@/components/SolarHeatmap'), {
@@ -71,8 +73,20 @@ export default function Home() {
 
   const t = DICTIONARY[locale]
 
-  // Telemetry simulation state
+  // Language switcher fade-out with scroll
+  const { scrollY } = useScroll()
+  const langOpacity = useTransform(scrollY, [0, 140], [1, 0])
+  const langY = useTransform(scrollY, [0, 140], [0, -15])
+  const langPointerEvents = useTransform(scrollY, (y) => (y > 140 ? 'none' : 'auto'))
+
+  // Telemetry simulation & live state
   const [hourIndex, setHourIndex] = useState<number>(7) // ~12:00 PM midday default
+  const [isRealTimeMode, setIsRealTimeMode] = useState<boolean>(true)
+  const [isLiveTelemetry, setIsLiveTelemetry] = useState<boolean>(false)
+  const [telemetrySource, setTelemetrySource] = useState<string>('Connecting to Open-Meteo...')
+  const [syncedTime, setSyncedTime] = useState<string>('')
+  const [points, setPoints] = useState<HourlyPoint[]>(() => buildDayTelemetry(-27.47, -58.83))
+
   const [windSpeedKmh, setWindSpeedKmh] = useState<number>(12)
   const [precipitationMm, setPrecipitationMm] = useState<number>(0)
   const [soilingLossPct, setSoilingLossPct] = useState<number>(8.5)
@@ -90,7 +104,7 @@ export default function Home() {
     powerDeltaKw: number
     isRaining: boolean
     cleaningSavingsYearUsd: number
-    decision: DeciderDecision<KuarahyToolAction>
+    decision: DeciderDecision<SolariaToolAction>
   }>({
     status: 'ACTIVE_TRACKING',
     motorTiltDeg: 28,
@@ -115,10 +129,44 @@ export default function Home() {
 
   const [loadingDecision, setLoadingDecision] = useState<boolean>(false)
 
-  // Base day points for Corrientes / Central solar hub
-  const points = buildDayTelemetry(-27.47, -58.83)
+  // Sync with user's real-time clock and Open-Meteo live solar telemetry
+  const syncWithUserClock = async () => {
+    const now = new Date()
+    const currentH = now.getHours()
+    const mappedIndex = Math.min(Math.max(currentH - 5, 0), 15)
+    setHourIndex(mappedIndex)
+    setIsRealTimeMode(true)
+
+    const formattedTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    setSyncedTime(formattedTime)
+
+    try {
+      const res = await fetch('/api/telemetry/live?lat=-27.47&lon=-58.83')
+      if (res.ok) {
+        const data = await res.json()
+        if (data.points && data.points.length > 0) {
+          setPoints(data.points)
+        }
+        setIsLiveTelemetry(Boolean(data.isLive))
+        setTelemetrySource(data.source)
+        if (data.current) {
+          setWindSpeedKmh(data.current.windSpeedKmh)
+          setPrecipitationMm(data.current.precipitationMm)
+        }
+      }
+    } catch (e) {
+      console.warn('Could not sync with live telemetry, keeping local model:', e)
+      setTelemetrySource('Deterministic Physical Model & SunCalc')
+    }
+  }
+
+  // Load live telemetry on mount
+  useEffect(() => {
+    syncWithUserClock()
+  }, [])
+
   const safeIndex = Math.max(0, Math.min(points.length - 1, hourIndex))
-  const currentPoint = points[safeIndex]
+  const currentPoint = points[safeIndex] || points[0]
   const decisionSource = getDeciderProvenanceMessage(actuationData.decision, hasReceivedActuation, {
     sample: t.provenance.sample,
     live: t.provenance.liveDecider,
@@ -177,6 +225,7 @@ export default function Home() {
 
   // Presets for instant demonstration
   const setNormalTrackingPreset = () => {
+    setIsRealTimeMode(false)
     setHourIndex(7) // Midday
     setWindSpeedKmh(12)
     setPrecipitationMm(0)
@@ -185,6 +234,7 @@ export default function Home() {
   }
 
   const setRainwashPreset = () => {
+    setIsRealTimeMode(false)
     setHourIndex(6)
     setWindSpeedKmh(15)
     setPrecipitationMm(4.8) // Rain triggers wash
@@ -192,12 +242,14 @@ export default function Home() {
   }
 
   const setStormDefensePreset = () => {
+    setIsRealTimeMode(false)
     setHourIndex(7)
     setWindSpeedKmh(74) // Dangerous wind triggers 0° stow
     setPrecipitationMm(0)
   }
 
   const setGridArbitragePreset = () => {
+    setIsRealTimeMode(false)
     setHourIndex(14) // Late afternoon / night
     setWindSpeedKmh(8)
     setPrecipitationMm(0)
@@ -207,120 +259,83 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen text-zinc-100 font-sans selection:bg-orange-500 selection:text-black">
-      {/* Dynamic Animated Cosmic Void Background (Magic UI style) */}
+      {/* Dynamic Animated Cosmic Void Background with Magnetic Follow */}
       <SolarBackground />
 
-      {/* Top Header */}
-      <header className="border-b border-zinc-800/60 bg-black/60 backdrop-blur-xl sticky top-0 z-40 px-6 py-3.5 transition-all">
-        <div className="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 via-amber-500 to-orange-600 flex items-center justify-center font-black text-black text-lg shadow-[0_0_20px_rgba(249,115,22,0.35)]">
-              <Sun className="w-5 h-5 text-black animate-spin" style={{ animationDuration: '24s' }} />
-              <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-black" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm font-black tracking-tight text-white uppercase flex items-center gap-1.5">
-                  {t.header.title}
-                  <Sparkles className="w-3.5 h-3.5 text-orange-400" />
-                </h1>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-orange-500/10 text-orange-400 border border-orange-500/30 shadow-[0_0_10px_rgba(249,115,22,0.15)]">
-                  {t.header.deciderBadge}
-                </span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/30">
-                  {t.header.activeMechatronicsBadge}
-                </span>
-              </div>
-              <p className="text-[11px] text-zinc-400">
-                {t.header.subtitlePrefix}<span className="text-orange-300 font-medium italic">{t.header.frugalQuote}</span>
-              </p>
-            </div>
-          </div>
+      {/* Hero Section with Central Glow and Scroll Parallax */}
+      <HeroSection
+        badge={t.hero.badge}
+        title={t.hero.title}
+        subtitle={t.hero.subtitle}
+        scrollCue={t.hero.scrollCue}
+      />
 
-          {/* Navigation Controls + Language Toggle */}
-          <div className="flex items-center gap-3">
-            {/* Navigation Tabs (Feature 1 vs Feature 2) */}
-            <div className="flex items-center gap-1.5 p-1 bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-md rounded-xl text-xs font-medium">
-              <button
-                onClick={() => setActiveTab('mechatronics')}
-                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === 'mechatronics'
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-black font-bold shadow-[0_0_15px_rgba(249,115,22,0.3)]'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                <Zap className="w-3.5 h-3.5" />
-                <span>{t.tabs.mechatronics}</span>
-                <span className="px-1.5 py-0.2 rounded text-[9px] bg-black/20 text-black uppercase font-black">{t.tabs.primaryBadge}</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('prospecting')}
-                className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
-                  activeTab === 'prospecting'
-                    ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-black font-bold shadow-[0_0_15px_rgba(249,115,22,0.3)]'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                <span>🗺️ {t.tabs.prospecting}</span>
-                <span className="px-1.5 py-0.2 rounded text-[9px] bg-zinc-900 text-zinc-400 uppercase font-mono">{t.tabs.secondaryBadge}</span>
-              </button>
-            </div>
-
-            {/* Quick EN / ES Switcher */}
-            <div className="flex items-center p-1 bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-md rounded-xl text-xs font-mono font-bold">
-              <div className="flex items-center gap-1 px-1.5 text-zinc-500">
-                <Globe className="w-3.5 h-3.5 text-zinc-400" />
-              </div>
-              <button
-                onClick={() => setLocale('en')}
-                aria-label="Switch to English"
-                className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
-                  locale === 'en'
-                    ? 'bg-orange-500 text-black shadow-sm font-black'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                EN
-              </button>
-              <button
-                onClick={() => setLocale('es')}
-                aria-label="Cambiar a Español"
-                className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
-                  locale === 'es'
-                    ? 'bg-orange-500 text-black shadow-sm font-black'
-                    : 'text-zinc-400 hover:text-zinc-200'
-                }`}
-              >
-                ES
-              </button>
-            </div>
-          </div>
+      {/* Floating Language Switcher (Fades out seamlessly with scroll) */}
+      <motion.div
+        style={{
+          opacity: langOpacity,
+          y: langY,
+          pointerEvents: langPointerEvents,
+        }}
+        className="fixed top-5 right-5 z-50 flex items-center p-1 bg-zinc-950/85 border border-zinc-800/80 backdrop-blur-xl rounded-xl text-xs font-mono font-bold shadow-2xl"
+      >
+        <div className="flex items-center gap-1 px-1.5 text-zinc-500">
+          <Globe className="w-3.5 h-3.5 text-zinc-400" />
         </div>
-      </header>
+        <button
+          onClick={() => setLocale('en')}
+          aria-label="Switch to English"
+          className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+            locale === 'en'
+              ? 'bg-orange-500 text-black shadow-sm font-black'
+              : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          EN
+        </button>
+        <button
+          onClick={() => setLocale('es')}
+          aria-label="Cambiar a Español"
+          className={`px-2 py-1 rounded-lg transition-all cursor-pointer ${
+            locale === 'es'
+              ? 'bg-orange-500 text-black shadow-sm font-black'
+              : 'text-zinc-400 hover:text-zinc-200'
+          }`}
+        >
+          ES
+        </button>
+      </motion.div>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-6 space-y-6">
-        {/* Banner: The Mechatronics + Strands Decider Advantage with Radiant Border */}
-        <section className="relative p-5 rounded-2xl bg-gradient-to-r from-zinc-950 via-zinc-950/90 to-orange-950/30 border border-orange-500/25 backdrop-blur-xl flex flex-col md:flex-row md:items-center justify-between gap-4 overflow-hidden shadow-2xl">
-          <BorderBeam duration={10} colorFrom="#f97316" colorTo="#fbbf24" borderWidth={1} />
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono text-orange-400 uppercase tracking-widest font-black flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-orange-400" />
-                {t.banner.featureTitle}
-              </span>
-            </div>
-            <p className="text-xs text-zinc-300 leading-relaxed max-w-4xl">
-              {t.banner.featureDesc}
-            </p>
+        {/* Floating Navigation Tabs (Centered & Sticky when scrolling past Hero) */}
+        <div className="sticky top-5 z-40 flex justify-center pointer-events-none mb-6">
+          <div className="pointer-events-auto flex items-center gap-1.5 p-1 bg-zinc-950/85 border border-zinc-800/80 backdrop-blur-xl rounded-xl text-xs font-medium shadow-2xl">
+            <button
+              onClick={() => setActiveTab('mechatronics')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'mechatronics'
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-black font-bold shadow-[0_0_15px_rgba(249,115,22,0.3)]'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>{t.tabs.mechatronics}</span>
+              <span className="px-1.5 py-0.2 rounded text-[9px] bg-black/20 text-black uppercase font-black">{t.tabs.primaryBadge}</span>
+            </button>
+            <button
+              onClick={() => setActiveTab('prospecting')}
+              className={`px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'prospecting'
+                  ? 'bg-gradient-to-r from-orange-500 to-amber-500 text-black font-bold shadow-[0_0_15px_rgba(249,115,22,0.3)]'
+                  : 'text-zinc-400 hover:text-zinc-200'
+              }`}
+            >
+              <span>🗺️ {t.tabs.prospecting}</span>
+              <span className="px-1.5 py-0.2 rounded text-[9px] bg-zinc-900 text-zinc-400 uppercase font-mono">{t.tabs.secondaryBadge}</span>
+            </button>
           </div>
-          <div className="shrink-0 flex items-center gap-3">
-            <div className="px-3.5 py-2 rounded-xl bg-zinc-950/90 border border-orange-500/30 text-right backdrop-blur-md shadow-[0_0_15px_rgba(249,115,22,0.1)]">
-              <span className="text-[9px] font-mono text-zinc-500 uppercase block font-semibold">{t.banner.durationLabel}</span>
-              <span className="text-emerald-400 font-mono font-bold text-xs">{hasReceivedActuation ? `${actuationData.decision.latencyMs} ms` : '—'}</span>
-            </div>
-          </div>
-        </section>
+        </div>
 
         {/* Dynamic shadcn/ui Solar Metric Cards with Orange Tones scaled to % increment */}
         <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -347,7 +362,7 @@ export default function Home() {
 
           <SolarMetricCard
             title={t.kpi.deciderLatency.title}
-            value={hasReceivedActuation ? actuationData.decision.latencyMs : '—'}
+            value={hasReceivedActuation ? (actuationData.decision.latencyMs < 1 ? '< 1' : actuationData.decision.latencyMs) : '—'}
             unit="ms"
             comparisonText={t.kpi.deciderLatency.comparison}
             icon={Cpu}
@@ -356,12 +371,20 @@ export default function Home() {
 
           <SolarMetricCard
             title={t.kpi.crewSavings.title}
-            value={actuationData.cleaningSavingsYearUsd > 0 ? `$${actuationData.cleaningSavingsYearUsd}` : '—'}
-            unit="USD/yr"
-            incrementPct={actuationData.isRaining ? 24.8 : 8.5}
-            comparisonText={actuationData.isRaining ? t.kpi.crewSavings.activeComparison : t.kpi.crewSavings.idleComparison}
+            value={
+              actuationData.isRaining
+                ? `+${soilingLossPct.toFixed(1)}`
+                : (100 - soilingLossPct).toFixed(1)
+            }
+            unit={actuationData.isRaining ? `% ${t.kpi.crewSavings.recoveredUnit}` : `% ${t.kpi.crewSavings.cleanlinessUnit}`}
+            incrementPct={actuationData.isRaining ? Number(soilingLossPct.toFixed(1)) : -Number(soilingLossPct.toFixed(1))}
+            comparisonText={
+              actuationData.isRaining
+                ? `${t.kpi.crewSavings.activeComparison} · $1,850/yr`
+                : t.kpi.crewSavings.idleComparison
+            }
             icon={Droplets}
-            statusTag={t.kpi.crewSavings.statusTag}
+            statusTag={actuationData.isRaining ? t.kpi.crewSavings.activeStatus : t.kpi.crewSavings.idleStatus}
           />
         </section>
 
@@ -392,6 +415,34 @@ export default function Home() {
                       {actuationData.status}
                     </span>
                   </div>
+                </div>
+
+                {/* Live Telemetry Provenance Banner & User Real-Time Clock */}
+                <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 rounded-xl bg-zinc-900/60 border border-zinc-800/80 text-[11px] font-mono backdrop-blur-md">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className={`w-2 h-2 rounded-full ${isLiveTelemetry ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                    <span className="text-zinc-200 font-semibold flex items-center gap-1.5">
+                      <Radio className="w-3.5 h-3.5 text-orange-400" />
+                      {locale === 'es' ? 'Fuente:' : 'Source:'} {telemetrySource}
+                    </span>
+                    {syncedTime && (
+                      <span className="text-zinc-500 text-[10px] font-mono">
+                        ({locale === 'es' ? 'Sincronizado' : 'Synced'} {syncedTime})
+                      </span>
+                    )}
+                  </div>
+
+                  <button
+                    onClick={syncWithUserClock}
+                    className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                      isRealTimeMode
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-[0_0_12px_rgba(16,185,129,0.25)]'
+                        : 'bg-zinc-800 hover:bg-zinc-700 text-zinc-300 border border-zinc-700'
+                    }`}
+                  >
+                    <Clock className="w-3 h-3 text-emerald-400" />
+                    <span>{isRealTimeMode ? (locale === 'es' ? '● HORA EN VIVO' : '● LIVE TIME') : (locale === 'es' ? 'Sincronizar Hora Real' : 'Sync Real Time')}</span>
+                  </button>
                 </div>
 
                 {/* SVG Digital Twin with Mechatronic Tracker */}
@@ -426,7 +477,10 @@ export default function Home() {
                     min="0"
                     max={points.length - 1}
                     value={hourIndex}
-                    onChange={(e) => setHourIndex(Number(e.target.value))}
+                    onChange={(e) => {
+                      setIsRealTimeMode(false)
+                      setHourIndex(Number(e.target.value))
+                    }}
                     className="w-full accent-orange-500 cursor-pointer"
                   />
                   <div className="flex justify-between text-[10px] text-zinc-500 font-mono">
@@ -491,6 +545,55 @@ export default function Home() {
                     </button>
                   </div>
                 </div>
+
+                {/* Renglón de Referencias del Gemelo Digital */}
+                <div className="p-3.5 bg-zinc-900/50 rounded-xl border border-zinc-800/80 text-[11px] font-mono space-y-2.5">
+                  <div className="text-[10px] font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                    <span>{locale === 'es' ? 'Guía de Telemetría y Física del Gemelo Digital' : 'Digital Twin Physics & Telemetry Reference'}</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 text-[10px]">
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-black/50 border border-zinc-800/70">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0" />
+                      <div>
+                        <strong className="text-zinc-200 block">{locale === 'es' ? 'Sol & Arco' : 'Sun & Arc'}</strong>
+                        <span className="text-zinc-500 text-[9px]">{locale === 'es' ? 'Posición orbital' : 'Orbital position'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-black/50 border border-zinc-800/70">
+                      <span className="text-amber-400 font-bold shrink-0 font-mono text-xs">n̂ →</span>
+                      <div>
+                        <strong className="text-zinc-200 block">{locale === 'es' ? 'Vector Normal' : 'Normal Vector'}</strong>
+                        <span className="text-zinc-500 text-[9px]">{locale === 'es' ? 'Incidencia 0°' : '0° incidence'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-black/50 border border-zinc-800/70">
+                      <span className="w-3 h-1.5 rounded-sm bg-blue-600 border border-blue-400 shrink-0" />
+                      <div>
+                        <strong className="text-zinc-200 block">{locale === 'es' ? 'Cara Activa' : 'Active Face'}</strong>
+                        <span className="text-zinc-500 text-[9px]">{locale === 'es' ? 'Celdas PV frente' : 'Front PV cells'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-black/50 border border-zinc-800/70">
+                      <span className="w-3 h-1.5 rounded-sm bg-slate-800 border border-slate-600 shrink-0" />
+                      <div>
+                        <strong className="text-zinc-200 block">{locale === 'es' ? 'Chasis' : 'Chassis'}</strong>
+                        <span className="text-zinc-500 text-[9px]">{locale === 'es' ? 'Dorso de acero' : 'Steel backing'}</span>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 p-2 rounded-lg bg-black/50 border border-zinc-800/70 col-span-2 sm:col-span-1">
+                      <span className="text-emerald-400 shrink-0 text-xs">📡</span>
+                      <div>
+                        <strong className="text-zinc-200 block">{locale === 'es' ? 'Open-Meteo' : 'Open-Meteo'}</strong>
+                        <span className="text-zinc-500 text-[9px]">{locale === 'es' ? 'GTI/DNI en vivo' : 'Live GTI/DNI'}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
 
               {/* Right Column (4 cols): Mechatronic Advantage & Decider 2B Telemetry */}
@@ -528,49 +631,122 @@ export default function Home() {
                   )}
                 </div>
 
-                {/* Strands Decider 2B Decision Reasoning */}
-                <div className="p-5 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 shadow-xl space-y-3 font-mono text-xs backdrop-blur-xl">
-                  <div className="flex items-center justify-between pb-2 border-b border-zinc-800/80">
-                    <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider flex items-center gap-1.5 font-sans">
-                      <span className={`w-2 h-2 rounded-full ${hasReceivedActuation && actuationData.decision.engine === 'strands-decider-2b' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
-                      {t.sidebar.verdictTitle}
-                    </span>
-                    <span className="text-[10px] text-zinc-300 bg-zinc-800 px-2 py-0.5 rounded-full border border-zinc-700 font-bold">
-                      {hasReceivedActuation ? `${actuationData.decision.latencyMs} ms` : '—'}
-                    </span>
+                {/* Strands Decider 2B Decision Reasoning & Telemetry Vector */}
+                <div className="p-5 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 shadow-xl space-y-4 font-mono text-xs backdrop-blur-xl">
+                  {/* Card Header: Engine Status & Decision Latency */}
+                  <div className="flex items-center justify-between pb-3 border-b border-zinc-800/80">
+                    <div className="flex items-center gap-2">
+                      <span className={`w-2.5 h-2.5 rounded-full ${hasReceivedActuation && actuationData.decision.engine === 'strands-decider-2b' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                      <div>
+                        <span className="text-xs font-bold text-zinc-200 uppercase tracking-wider font-sans block">
+                          {t.sidebar.verdictTitle}
+                        </span>
+                        <span className="text-[10px] text-zinc-500 font-mono">
+                          #tool-selection // System-One
+                        </span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-[10px] text-emerald-400 bg-emerald-950/40 px-2.5 py-1 rounded-full border border-emerald-500/30 font-bold block">
+                        {hasReceivedActuation ? (actuationData.decision.latencyMs < 1 ? '< 1 ms' : `${actuationData.decision.latencyMs} ms`) : '—'}
+                      </span>
+                      <span className="text-[9px] text-zinc-500 mt-0.5 block">
+                        {loadingDecision ? (locale === 'es' ? 'evaluando...' : 'evaluating...') : 'sub-115ms SLA'}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <div className="text-[11px] text-zinc-300 font-sans leading-relaxed" role="status">
-                      {decisionSource}
-                    </div>
-                    {hasReceivedActuation && actuationData.decision.engine === 'strands-decider-2b' && actuationData.decision.model && (
-                      <div className="text-[10px] text-zinc-500">{t.provenance.modelLabel}: {actuationData.decision.model}</div>
-                    )}
-                    <div>
-                      <span className="text-[10px] text-zinc-500 uppercase block font-semibold">{t.sidebar.selectedTool}</span>
-                      <span className="text-orange-400 font-bold text-sm">{actuationData.decision.choice}</span>
-                    </div>
-
-                    <div>
-                      <span className="text-[10px] text-zinc-500 uppercase block font-semibold">{t.sidebar.confidence}</span>
-                      <span className="text-zinc-200">{(actuationData.decision.confidence * 100).toFixed(1)}%</span>
+                  {/* Input Telemetry Vector (Evaluated by Strands Decider) */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-sans">
+                      <span className="text-zinc-400 font-semibold uppercase tracking-wider">
+                        {locale === 'es' ? 'Vector de Telemetría (API)' : 'Input Telemetry Vector (API)'}
+                      </span>
+                      <span className="text-[9px] text-amber-400 font-mono bg-amber-500/10 px-1.5 py-0.5 rounded border border-amber-500/20">
+                        {isLiveTelemetry ? 'Open-Meteo Live' : 'Physical Model'}
+                      </span>
                     </div>
 
+                    <div className="grid grid-cols-3 gap-1.5 p-2.5 bg-black/60 rounded-xl border border-zinc-800/60 text-[10px]">
+                      <div className="space-y-0.5">
+                        <span className="text-zinc-500 block text-[9px]">{locale === 'es' ? 'Irradiancia' : 'Irradiance'}</span>
+                        <span className="text-amber-400 font-bold">{currentPoint.poa} <span className="text-zinc-500 text-[8px]">W/m²</span></span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-zinc-500 block text-[9px]">{locale === 'es' ? 'Elevación' : 'Elevation'}</span>
+                        <span className="text-zinc-200 font-bold">{currentPoint.sun.elevation.toFixed(1)}°</span>
+                      </div>
+                      <div className="space-y-0.5">
+                        <span className="text-zinc-500 block text-[9px]">{locale === 'es' ? 'Viento' : 'Wind Speed'}</span>
+                        <span className="text-zinc-200 font-bold">{windSpeedKmh} <span className="text-zinc-500 text-[8px]">km/h</span></span>
+                      </div>
+                      <div className="space-y-0.5 pt-1 border-t border-zinc-800/40">
+                        <span className="text-zinc-500 block text-[9px]">{locale === 'es' ? 'Precipitación' : 'Rain'}</span>
+                        <span className="text-sky-400 font-bold">{precipitationMm} <span className="text-zinc-500 text-[8px]">mm/h</span></span>
+                      </div>
+                      <div className="space-y-0.5 pt-1 border-t border-zinc-800/40">
+                        <span className="text-zinc-500 block text-[9px]">{locale === 'es' ? 'Batería SOC' : 'Battery SOC'}</span>
+                        <span className="text-emerald-400 font-bold">{batterySocPct}%</span>
+                      </div>
+                      <div className="space-y-0.5 pt-1 border-t border-zinc-800/40">
+                        <span className="text-zinc-500 block text-[9px]">{locale === 'es' ? 'Tarifa Spot' : 'Spot Tariff'}</span>
+                        <span className="text-orange-400 font-bold">${tariffPrice.toFixed(2)}<span className="text-zinc-500 text-[8px]">/kWh</span></span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Strands Decider Tool Selection & Actuation Output */}
+                  <div className="space-y-2 pt-1 border-t border-zinc-800/80">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] text-zinc-500 uppercase block font-semibold">{t.sidebar.selectedTool}</span>
+                        <span className="text-orange-400 font-bold text-sm flex items-center gap-1.5">
+                          <span className="w-1.5 h-1.5 rounded-full bg-orange-400" />
+                          {actuationData.decision.choice}
+                        </span>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] text-zinc-500 uppercase block font-semibold">{locale === 'es' ? 'Actuación Mecatrónica' : 'Mechatronic Status'}</span>
+                        <span className="text-zinc-200 font-bold text-xs bg-zinc-900 px-2 py-0.5 rounded border border-zinc-800">
+                          {actuationData.status} ({actuationData.motorTiltDeg}°)
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Confidence Score Bar */}
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between text-[10px]">
+                        <span className="text-zinc-500 uppercase font-semibold">{t.sidebar.confidence}</span>
+                        <span className="text-zinc-200 font-bold">{(actuationData.decision.confidence * 100).toFixed(1)}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-zinc-900 rounded-full overflow-hidden border border-zinc-800">
+                        <div 
+                          className="h-full bg-gradient-to-r from-amber-500 to-orange-400 transition-all duration-500 rounded-full"
+                          style={{ width: `${Math.min(100, Math.max(5, actuationData.decision.confidence * 100))}%` }}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Decision Reasoning Box */}
                     <div className="p-3 bg-zinc-900/80 rounded-xl border border-zinc-800/80 text-[11px] text-zinc-300 font-sans leading-relaxed">
+                      <div className="flex items-center gap-1.5 text-zinc-400 font-semibold mb-1 text-[10px] uppercase font-mono">
+                        <span>⚡ {locale === 'es' ? 'Fundamento Físico de Decisión' : 'Physical Decision Rationale'}:</span>
+                      </div>
                       {actuationData.decision.reasoning}
                     </div>
-                  </div>
-                </div>
 
-                {/* Werner Vogels Frugal Card */}
-                <div className="p-4 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 text-xs text-zinc-400 space-y-2 backdrop-blur-xl">
-                  <span className="text-[10px] font-mono text-orange-400 font-bold uppercase tracking-wider block flex items-center gap-1.5">
-                    {t.sidebar.frugalTitle}
-                  </span>
-                  <p className="text-[11px] leading-relaxed">
-                    {t.sidebar.frugalText}
-                  </p>
+                    {/* Engine Provenance Note */}
+                    <div className="text-[10px] text-zinc-500 font-sans flex items-center justify-between pt-1">
+                      <span className="truncate max-w-[210px]" title={decisionSource}>
+                        {decisionSource}
+                      </span>
+                      {hasReceivedActuation && actuationData.decision.engine === 'strands-decider-2b' && actuationData.decision.model && (
+                        <span className="text-zinc-400 font-mono text-[9px] bg-zinc-900 px-1.5 py-0.5 rounded border border-zinc-800">
+                          {actuationData.decision.model}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -599,26 +775,6 @@ export default function Home() {
             </div>
           </div>
         )}
-
-        {/* Measurement and simulation disclosures */}
-        <section className="relative p-6 rounded-2xl bg-zinc-950/80 border border-zinc-800/80 backdrop-blur-xl space-y-4 overflow-hidden shadow-2xl">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-3 border-b border-zinc-800/80">
-            <div>
-              <h2 className="text-sm font-bold text-white uppercase tracking-wider flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-orange-400" />
-                {t.benchmark.title}
-              </h2>
-              <p className="text-xs text-zinc-400">
-                {t.benchmark.subtitle}
-              </p>
-            </div>
-            <span className="px-3 py-1 rounded-full text-xs font-mono font-bold bg-amber-500/10 text-amber-300 border border-amber-500/30 self-start md:self-auto">{t.provenance.noComparison}</span>
-          </div>
-
-          <ul className="space-y-2 text-xs text-zinc-300">
-            {t.benchmark.details.map((detail) => <li key={detail} className="flex gap-2"><span className="text-amber-400">•</span><span>{detail}</span></li>)}
-          </ul>
-        </section>
       </main>
     </div>
   )

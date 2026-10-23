@@ -10,7 +10,7 @@
  * This module exports:
  * 1. A generic, reusable `DeciderToolSelector<TState, TToolName>` class usable in any agent.
  * 2. An AWS Strands-compatible `InterventionHandler` adapter.
- * 3. Specific pre-configured tools and evaluation logic for Kuarahy Solar AX.
+ * 3. Specific pre-configured tools and evaluation logic for Solaria.
  * 4. Local solar-domain heuristic evaluation for offline use.
  */
 
@@ -192,10 +192,10 @@ function parseDeciderResponse<TToolName extends string>(
 }
 
 // ============================================================================
-// KUARAHY SOLAR AX — SPECIFIC IMPLEMENTATION
+// SOLARIA — SPECIFIC IMPLEMENTATION
 // ============================================================================
 
-export type KuarahyToolAction =
+export type SolariaToolAction =
   | 'evaluate_solar_prospect'    // Land parcel prospecting & investment valuation
   | 'adjust_solar_tracker'       // High-frequency dual/single-axis motor tracking
   | 'clean_panels_rainwash'      // Steep tilt rainwash self-cleaning mechatronics
@@ -203,7 +203,7 @@ export type KuarahyToolAction =
   | 'storm_safeguard'            // Stow panels to horizontal defense mode
   | 'standby_idle'               // Night or no irradiance change
 
-export interface KuarahyAgentState {
+export interface SolariaAgentState {
   mode: 'prospecting' | 'telemetry_tracking'
   coords: { lat: number; lon: number }
   areaHa?: number                // Hectares for land prospecting
@@ -218,7 +218,7 @@ export interface KuarahyAgentState {
   cloudCoverPct?: number
 }
 
-export const KUARAHY_DECIDER_TOOLS: DeciderToolOption<KuarahyToolAction>[] = [
+export const SOLARIA_DECIDER_TOOLS: DeciderToolOption<SolariaToolAction>[] = [
   {
     id: 'evaluate_solar_prospect',
     label: 'Solar Field Prospecting & Yield Analysis',
@@ -257,14 +257,14 @@ export const KUARAHY_DECIDER_TOOLS: DeciderToolOption<KuarahyToolAction>[] = [
   },
 ]
 
-export class KuarahySolarDecider extends DeciderToolSelector<KuarahyAgentState, KuarahyToolAction> {
+export class SolariaSolarDecider extends DeciderToolSelector<SolariaAgentState, SolariaToolAction> {
   constructor(endpointUrl?: string, model?: string) {
     super({
       question: 'Given the real-time solar telemetry and operating mode, select the optimal actuation or assessment tool.',
-      options: KUARAHY_DECIDER_TOOLS,
+      options: SOLARIA_DECIDER_TOOLS,
       endpointUrl,
       model,
-      extractState: (state: KuarahyAgentState) => ({
+      extractState: (state: SolariaAgentState) => ({
         mode: state.mode,
         lat: state.coords.lat,
         lon: state.coords.lon,
@@ -282,10 +282,10 @@ export class KuarahySolarDecider extends DeciderToolSelector<KuarahyAgentState, 
   }
 
   /**
-   * Specialized decision logic for Kuarahy Solar AX.
+   * Specialized decision logic for Solaria.
    */
   protected override heuristicEvaluate(state: Record<string, unknown>): {
-    choice: KuarahyToolAction
+    choice: SolariaToolAction
     confidence: number
     reasoning: string
   } {

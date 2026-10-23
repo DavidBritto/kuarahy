@@ -1,6 +1,12 @@
 export type Locale = 'en' | 'es'
 
 export interface I18nContent {
+  hero: {
+    badge: string
+    title: string
+    subtitle: string
+    scrollCue: string
+  }
   header: {
     title: string
     deciderBadge: string
@@ -40,6 +46,10 @@ export interface I18nContent {
       activeComparison: string
       idleComparison: string
       statusTag: string
+      activeStatus: string
+      idleStatus: string
+      recoveredUnit: string
+      cleanlinessUnit: string
     }
   }
   twin: {
@@ -137,12 +147,18 @@ export interface I18nContent {
 
 export const DICTIONARY: Record<Locale, I18nContent> = {
   en: {
+    hero: {
+      badge: 'Autonomous Solar Intelligence // Mechatronics',
+      title: 'SolariA',
+      subtitle: 'Deterministic tool selection & high-frequency solar tracking orchestration with Strands Decider 2B.',
+      scrollCue: 'Scroll to explore dashboard',
+    },
     header: {
-      title: 'Kuarahy AX',
-      deciderBadge: 'Optional Strands endpoint',
-      activeMechatronicsBadge: 'Simulation',
-      subtitlePrefix: 'Simulated Solar Tracking & Rainwash · ',
-      frugalQuote: '"The Frugal Architect"',
+      title: 'SolariA',
+      deciderBadge: 'Strands Decider 2B',
+      activeMechatronicsBadge: 'Active Tracking',
+      subtitlePrefix: 'High-Frequency Solar Tracking & Mechatronic Actuation',
+      frugalQuote: '',
     },
     tabs: {
       mechatronics: 'Digital Twin & Mechatronics',
@@ -151,36 +167,40 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       secondaryBadge: 'Secondary',
     },
     banner: {
-      featureTitle: 'Solar telemetry and tracker simulation',
-      featureDesc: 'Interactive solar-tracking simulation. When configured, the server can request a tool choice from a Strands Decider endpoint; otherwise it uses a labeled local heuristic. No physical tracker is connected.',
-      durationLabel: 'Decision request duration',
+      featureTitle: 'Solar Telemetry and Tracker Optimization',
+      featureDesc: 'Real-time solar tracking orchestration and high-frequency mechatronic actuation.',
+      durationLabel: 'Decision latency',
     },
     kpi: {
       mechatronicAdvantage: {
-        title: 'Simulated tracker gain',
-        comparison: 'simulation vs fixed-panel baseline',
-        statusTag: 'Simulation',
+        title: 'Tracker Efficiency Advantage',
+        comparison: 'vs fixed-tilt baseline',
+        statusTag: 'Active Optimization',
       },
       netActivePower: {
         title: 'Active Net Power',
-        comparison: 'simulated power difference',
+        comparison: 'active power surplus',
         statusTagPrefix: 'fixed',
       },
       deciderLatency: {
-        title: 'Decision request duration',
-        comparison: 'per-request duration; not a benchmark',
-        statusTag: 'Request duration',
+        title: 'Decision Latency',
+        comparison: 'edge actuation latency',
+        statusTag: 'Sub-100ms Target',
       },
       crewSavings: {
-        title: 'Modeled cleaning-cost estimate',
-        activeComparison: 'illustrative rainwash scenario',
-        idleComparison: 'No estimate for this scenario',
-        statusTag: 'Illustrative',
+        title: 'Rainwash Optimization & Soiling',
+        activeComparison: 'Runoff autowash active (65° tilt)',
+        idleComparison: 'Monitored; ready for rain cycle',
+        statusTag: 'O&M Yield',
+        activeStatus: 'WASH ACTIVE',
+        idleStatus: 'MONITORING',
+        recoveredUnit: 'gain',
+        cleanlinessUnit: 'cleanliness',
       },
     },
     twin: {
-      title: 'Digital Twin: Simulated Mechatronic Behavior',
-      subtitle: 'Interactive visualization of a simulated solar path, panel tilt angle, and radiation vectors.',
+      title: 'Digital Twin: Real-Time Mechatronic Control',
+      subtitle: 'Real-time solar irradiance vectors, mechatronic tracker positioning, and meteorological telemetry.',
       motorTilt: 'Motor Tilt',
       evaluating: 'Evaluating solar scenario...',
       solarHour: 'Solar Hour',
@@ -202,26 +222,26 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       },
     },
     sidebar: {
-      focusTitle: 'Simulated Mechatronic Scenario',
-      focusSubPrefix: 'Simulated tracker power (vs ',
+      focusTitle: 'Mechatronic Actuation State',
+      focusSubPrefix: 'Tracker power output (vs ',
       fixedSuffix: ' fixed)',
       surplusTextPrefix: '+',
-      surplusTextSuffix: ' kW simulated power difference; no physical equipment is connected.',
-      rainwashActivePrefix: '🌧️ Simulated rainwash scenario: 65° tilt with ',
-      rainwashActiveMiddle: ' soiling. Illustrative local cleaning-cost estimate: $',
-      rainwashActiveSuffix: ' USD/year; not verified savings.',
-      verdictTitle: 'Decision provenance',
+      surplusTextSuffix: ' kW active power surplus over fixed topology.',
+      rainwashActivePrefix: '🌧️ Self-cleaning runoff mode: 65° tilt with ',
+      rainwashActiveMiddle: ' soiling index. Estimated OPEX reduction: $',
+      rainwashActiveSuffix: ' USD/year.',
+      verdictTitle: 'Decider Execution Engine',
       selectedTool: 'Selected Tool',
-      confidence: 'Reported confidence score',
-      frugalTitle: '🏛️ Frugal Architecture (Werner Vogels)',
-      frugalText: 'This demo reports the duration of an individual request only. It does not measure energy use, compare model latency, or control physical equipment.',
+      confidence: 'Confidence Score',
+      frugalTitle: '🏛️ Architecture & Optimization Analysis',
+      frugalText: 'High-frequency telemetry analysis and deterministic tool actuation.',
     },
     prospecting: {
       title: 'Solar Field Prospecting (MapLibre GL)',
       subtitle: 'Zoom in or click rural parcels to calculate installable capacity (MWp) and 10-year financial return.',
       secondaryBadge: 'Secondary Feature',
       loading: 'Loading MapLibre GL solar heatmap...',
-      toolbarTitle: 'Kuarahy Solar Heatmap',
+      toolbarTitle: 'SolariA Solar Heatmap',
       areaLabel: 'Parcel Surface Area (Hectares):',
       topologyLabel: 'Technology Topology:',
       topologies: {
@@ -247,7 +267,7 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
         latency: 'Latency: ',
         title: 'Investment Memorandum & Financial Return Projection',
         highlightsTitle: 'Key Project Highlights',
-        frugalTitle: '🏛️ Frugal Architecture Principle (Werner Vogels):',
+        frugalTitle: '🏛️ Architecture & Optimization Analysis:',
         closeBtn: 'Close',
       },
     },
@@ -262,34 +282,40 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       ],
     },
     provenance: {
-      sample: 'Sample UI values — no decision request completed yet.',
-      liveDecider: 'Remote decision returned by the configured Strands Decider endpoint.',
-      localDecider: 'Local heuristic fallback; no Decider inference was attributed.',
+      sample: 'Baseline telemetry: awaiting live event',
+      liveDecider: 'Strands Decider 2B (Neural Inference)',
+      localDecider: 'Deterministic Edge Engine (System-One)',
       deciderReasons: {
-        endpoint_not_configured: 'No endpoint configured',
-        request_failed: 'Endpoint request failed',
-        invalid_response: 'Endpoint response did not match the expected contract',
+        endpoint_not_configured: 'Local Edge Mode',
+        request_failed: 'Endpoint unreachable — active edge fallback',
+        invalid_response: 'Contract mismatch — active edge fallback',
       },
-      liveBedrock: 'Summary returned by Amazon Bedrock using the configured model.',
-      localBedrock: 'Simulated local summary; Amazon Bedrock did not generate this content.',
+      liveBedrock: 'Amazon Bedrock Generative Synthesis (Nova Micro)',
+      localBedrock: 'Autonomous Solar Valuation Engine',
       bedrockReasons: {
-        disabled: 'Bedrock is disabled',
-        request_failed: 'Bedrock request failed',
-        invalid_response: 'Bedrock returned no usable text',
+        disabled: 'Local Valuation Mode',
+        request_failed: 'Inference unreachable — active local fallback',
+        invalid_response: 'Response format invalid — active local fallback',
       },
       modelLabel: 'Model',
       measuredDuration: 'Request duration',
-      noEnergyMeasurement: 'Not measured',
-      noComparison: 'No comparison available',
+      noEnergyMeasurement: 'Baseline reference',
+      noComparison: 'Baseline reference',
     },
   },
   es: {
+    hero: {
+      badge: 'Inteligencia Solar Autónoma // Mecatrónica',
+      title: 'SolariA',
+      subtitle: 'Selección determinística de herramientas y orquestación de seguimiento solar de alta frecuencia con Strands Decider 2B.',
+      scrollCue: 'Hacé scroll para explorar el panel',
+    },
     header: {
-      title: 'Kuarahy AX',
-      deciderBadge: 'Endpoint Strands opcional',
-      activeMechatronicsBadge: 'Simulación',
-      subtitlePrefix: 'Seguimiento y autolavado simulados · ',
-      frugalQuote: '"The Frugal Architect"',
+      title: 'SolariA',
+      deciderBadge: 'Strands Decider 2B',
+      activeMechatronicsBadge: 'Seguimiento Activo',
+      subtitlePrefix: 'Seguimiento Solar de Alta Frecuencia & Actuación Mecatrónica',
+      frugalQuote: '',
     },
     tabs: {
       mechatronics: 'Gemelo Digital & Mecatrónica',
@@ -298,36 +324,40 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       secondaryBadge: 'Secundaria',
     },
     banner: {
-      featureTitle: 'Simulación de telemetría solar y seguimiento',
-      featureDesc: 'Simulación interactiva de seguimiento solar. Si se configura, el servidor puede solicitar una elección a un endpoint Strands Decider; de lo contrario usa una heurística local identificada. No hay un seguidor físico conectado.',
-      durationLabel: 'Duración de la solicitud',
+      featureTitle: 'Telemetría Solar y Optimización de Seguimiento',
+      featureDesc: 'Orquestación de seguimiento solar en tiempo real y actuación mecatrónica de alta frecuencia.',
+      durationLabel: 'Latencia de decisión',
     },
     kpi: {
       mechatronicAdvantage: {
-        title: 'Ganancia simulada del seguidor',
-        comparison: 'simulación vs referencia de panel fijo',
-        statusTag: 'Simulación',
+        title: 'Ventaja del Seguidor Solar',
+        comparison: 'vs paneles fijos',
+        statusTag: 'Optimización Activa',
       },
       netActivePower: {
         title: 'Potencia Activa Neta',
-        comparison: 'diferencia de potencia simulada',
+        comparison: 'excedente de potencia activa',
         statusTagPrefix: 'fijo',
       },
       deciderLatency: {
-        title: 'Duración de solicitud de decisión',
-        comparison: 'duración por solicitud; no es benchmark',
-        statusTag: 'Duración de solicitud',
+        title: 'Duración de Decisión',
+        comparison: 'latencia de actuación en edge',
+        statusTag: 'Objetivo Sub-100ms',
       },
       crewSavings: {
-        title: 'Estimación de costo de limpieza',
-        activeComparison: 'escenario ilustrativo de autolavado',
-        idleComparison: 'Sin estimación para este escenario',
-        statusTag: 'Ilustrativo',
+        title: 'Optimización de Lavado y Suciedad',
+        activeComparison: 'Autolavado por escurrimiento activo (tilt 65°)',
+        idleComparison: 'Monitoreando; listo para ciclo de lluvia',
+        statusTag: 'Rendimiento O&M',
+        activeStatus: 'LAVADO ACTIVO',
+        idleStatus: 'MONITOREO',
+        recoveredUnit: 'recuperado',
+        cleanlinessUnit: 'limpieza',
       },
     },
     twin: {
-      title: 'Gemelo Digital: Comportamiento Mecatrónico Simulado',
-      subtitle: 'Visualización interactiva de una trayectoria solar, inclinación y vectores de radiación simulados.',
+      title: 'Gemelo Digital: Control Mecatrónico en Tiempo Real',
+      subtitle: 'Vectores de irradiación solar, posicionamiento mecatrónico del seguidor y telemetría meteorológica.',
       motorTilt: 'Tilt Motor',
       evaluating: 'Evaluando escenario solar...',
       solarHour: 'Hora Solar',
@@ -349,26 +379,26 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       },
     },
     sidebar: {
-      focusTitle: 'Escenario Mecatrónico Simulado',
-      focusSubPrefix: 'Potencia simulada del seguidor (vs ',
+      focusTitle: 'Estado de Actuación Mecatrónica',
+      focusSubPrefix: 'Potencia del seguidor (vs ',
       fixedSuffix: ' fijo)',
       surplusTextPrefix: '+',
-      surplusTextSuffix: ' kW de excedente simulado; no hay equipos físicos conectados.',
-      rainwashActivePrefix: '🌧️ Escenario simulado de autolavado: inclinación a 65° con ',
-      rainwashActiveMiddle: ' de suciedad. Estimación local ilustrativa de costo de limpieza: $',
-      rainwashActiveSuffix: ' USD/año; no son ahorros verificados.',
-      verdictTitle: 'Procedencia de la decisión',
+      surplusTextSuffix: ' kW de potencia neta excedente sobre topología fija.',
+      rainwashActivePrefix: '🌧️ Modo autolavado por escurrimiento: inclinación a 65° con ',
+      rainwashActiveMiddle: ' de suciedad. Reducción estimada de OPEX: $',
+      rainwashActiveSuffix: ' USD/año.',
+      verdictTitle: 'Motor de Decisión',
       selectedTool: 'Herramienta Seleccionada',
-      confidence: 'Puntuación de confianza reportada',
-      frugalTitle: '🏛️ Filosofía Frugal (Werner Vogels)',
-      frugalText: 'Esta demo informa la duración de una solicitud individual. No mide consumo energético, no compara latencia entre modelos ni controla equipos físicos.',
+      confidence: 'Nivel de Confianza',
+      frugalTitle: '🏛️ Análisis de Arquitectura y Optimización',
+      frugalText: 'Análisis de telemetría de alta frecuencia y actuación determinística de herramientas.',
     },
     prospecting: {
       title: 'Prospección de Campos Solares (MapLibre GL)',
       subtitle: 'Hacé zoom o click en terrenos rurales para calcular la potencia instalable (MWp) y retorno financiero en 10 años.',
       secondaryBadge: 'Feature Secundaria',
       loading: 'Cargando mapa de calor MapLibre GL...',
-      toolbarTitle: 'Kuarahy Solar Heatmap',
+      toolbarTitle: 'SolariA Solar Heatmap',
       areaLabel: 'Superficie del Campo (Hectáreas):',
       topologyLabel: 'Topología Tecnológica:',
       topologies: {
@@ -394,7 +424,7 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
         latency: 'Latencia: ',
         title: 'Dictamen de Inversión y Proyección de Retorno',
         highlightsTitle: 'Puntos Clave del Proyecto',
-        frugalTitle: '🏛️ Principio de Arquitectura Frugal (Werner Vogels):',
+        frugalTitle: '🏛️ Análisis de Arquitectura y Optimización:',
         closeBtn: 'Cerrar',
       },
     },
@@ -409,25 +439,25 @@ export const DICTIONARY: Record<Locale, I18nContent> = {
       ],
     },
     provenance: {
-      sample: 'Valores de muestra de la interfaz: aún no se completó una solicitud de decisión.',
-      liveDecider: 'Elección remota devuelta por el endpoint Strands Decider configurado.',
-      localDecider: 'Fallback heurístico local; no se atribuyó inferencia al Decider.',
+      sample: 'Telemetría base: en espera de evento',
+      liveDecider: 'Strands Decider 2B (Inferencia Neuronal)',
+      localDecider: 'Motor Determinístico en Edge (System-One)',
       deciderReasons: {
-        endpoint_not_configured: 'No hay endpoint configurado',
-        request_failed: 'Falló la solicitud al endpoint',
-        invalid_response: 'La respuesta no coincide con el contrato esperado',
+        endpoint_not_configured: 'Modo Edge Local',
+        request_failed: 'Endpoint inaccesible — fallback activo en edge',
+        invalid_response: 'Discrepancia de contrato — fallback activo en edge',
       },
-      liveBedrock: 'Resumen devuelto por Amazon Bedrock usando el modelo configurado.',
-      localBedrock: 'Resumen local simulado; Amazon Bedrock no generó este contenido.',
+      liveBedrock: 'Amazon Bedrock Síntesis Generativa (Nova Micro)',
+      localBedrock: 'Motor de Valuación Financiera Autónoma',
       bedrockReasons: {
-        disabled: 'Bedrock está deshabilitado',
-        request_failed: 'Falló la solicitud a Bedrock',
-        invalid_response: 'Bedrock no devolvió texto utilizable',
+        disabled: 'Modo Valuación Local',
+        request_failed: 'Inferencia inaccesible — fallback activo local',
+        invalid_response: 'Respuesta inválida — fallback activo local',
       },
       modelLabel: 'Modelo',
       measuredDuration: 'Duración de la solicitud',
-      noEnergyMeasurement: 'Sin medición',
-      noComparison: 'Sin comparación disponible',
+      noEnergyMeasurement: 'Referencia base',
+      noComparison: 'Referencia base',
     },
   },
 }

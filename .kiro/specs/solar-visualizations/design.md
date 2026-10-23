@@ -2,7 +2,7 @@
 
 ## Overview
 
-Este documento describe el diseño de los tres componentes de visualización del carril de David dentro del dashboard de **Kuarahy**: `SolarArc.tsx` (gemelo digital del arco solar), `ValidationChart.tsx` (superposición del motor propio contra Open-Meteo) y `PowerChart.tsx` (área de pérdida entre potencia real y óptima).
+Este documento describe el diseño de los tres componentes de visualización del carril de David dentro del dashboard de **SolariA**: `SolarArc.tsx` (gemelo digital del arco solar), `ValidationChart.tsx` (superposición del motor propio contra Open-Meteo) y `PowerChart.tsx` (área de pérdida entre potencia real y óptima).
 
 Los tres son componentes de presentación puros (`'use client'` cuando corresponda para Recharts): no hacen `fetch`, no conocen la API ni el normalizador, y reciben únicamente los sub-tipos de `DashboardPayload` que necesitan como props desde `components/Dashboard.tsx` (carril de Lautaro). Esta frontera de tipos —no de archivo compartido— es la que permite que ambos carriles avancen en paralelo desde el minuto 20, apenas existe `lib/mock.ts`.
 

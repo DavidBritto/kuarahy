@@ -1,6 +1,6 @@
-# Kuarahy AX
+# SolariA
 
-Kuarahy AX is a bilingual Next.js demo of solar telemetry, tool selection, parcel valuation, and executive-summary generation. Solar telemetry, equipment behavior, and financial results are simulated locally. A configured Strands Decider endpoint and Amazon Bedrock are optional; the app can run its local decision and summary fallbacks without either integration.
+SolariA is a bilingual Next.js demo of solar telemetry, tool selection, parcel valuation, and executive-summary generation. Solar telemetry, equipment behavior, and financial results are simulated locally. A configured Strands Decider endpoint and Amazon Bedrock are optional; the app can run its local decision and summary fallbacks without either integration.
 
 ## Run the local demo
 
