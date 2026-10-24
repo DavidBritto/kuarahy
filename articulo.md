@@ -164,5 +164,6 @@ By pairing mechatronics with AWS agent technology, we turn clean energy generati
 
 ### Links & Resources
 - **GitHub Repository:** [DavidBritto/solaria](https://github.com/DavidBritto/solaria)
-- **Demo Script & Scenarios:** [`DEMO_VIDEO_SCRIPT.md`](https://github.com/DavidBritto/solaria/blob/main/DEMO_VIDEO_SCRIPT.md)
+- **Jupyter & Amazon SageMaker Notebook:** [`solaria_strands_decider_bedrock.ipynb`](https://github.com/DavidBritto/solaria/blob/main/solaria_strands_decider_bedrock.ipynb)
+- **Demo Video Script:** [`DEMO_VIDEO_SCRIPT.md`](https://github.com/DavidBritto/solaria/blob/main/DEMO_VIDEO_SCRIPT.md)
 - **Reusable Decider Pattern:** [`REUSABLE_DECIDER_PATTERN.md`](https://github.com/DavidBritto/solaria/blob/main/REUSABLE_DECIDER_PATTERN.md)
